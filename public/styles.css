@@ -1,0 +1,25 @@
+/* COMMON BACKGROUND FOR ALL PAGES */
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Poppins", sans-serif;
+  background: url('/images/storage-bg.jpg') no-repeat center center fixed;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+/* Dark overlay for readability */
+body::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 0;
+}
+
+/* Ensure all content stays above overlay */
+body > * {
+  position: relative;
+  z-index: 1;
+}
