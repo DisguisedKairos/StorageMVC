@@ -98,7 +98,7 @@ module.exports = {
     const { start_date, end_date, method } = req.body;
 
     const paymentMethod = (method || "").trim();
-    const allowed = ["Credit Card", "Debit Card", "PayNow", "Cash", "Online", "PayPal", "NETSQR", "Stripe"];
+    const allowed = ["PayNow", "Cash", "PayPal", "NETSQR", "Stripe"];
     if (!allowed.includes(paymentMethod)) {
       return res.status(400).send("Invalid payment method");
     }
