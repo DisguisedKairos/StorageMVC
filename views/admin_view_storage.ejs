@@ -1,0 +1,35 @@
+<%- include("partials/header", { title: "Admin - Storage" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Storage Items</h3>
+    <a class="btn btn-primary" href="/admin/storage/add">+ Add Storage</a>
+  </div>
+
+  <div class="card shadow-soft p-3">
+    <table class="table align-middle">
+      <thead>
+        <tr>
+          <th>Title</th><th>Size</th><th>Price/day</th><th>Status</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% storage.forEach(s => { %>
+          <tr>
+            <td><%= s.title %></td>
+            <td><%= s.size %></td>
+            <td>$<%= s.price_per_day || s.price %></td>
+            <td><span class="badge bg-<%= s.status === 'Rented' ? 'danger' : 'success' %>"><%= s.status %></span></td>
+            <td>
+              <a class="btn btn-sm btn-warning" href="/admin/storage/edit/<%= s.storage_id %>">Edit</a>
+              <a class="btn btn-sm btn-danger" href="/admin/storage/delete/<%= s.storage_id %>">Delete</a>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%- include("partials/footer") %>

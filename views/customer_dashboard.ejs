@@ -1,0 +1,64 @@
+<%- include("partials/header", { title: "Customer Dashboard" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h3 class="mb-1">Welcome, <%= user.name %></h3>
+      <div class="small-muted">Manage your saved storage items and bookings.</div>
+    </div>
+    <a href="/cart" class="btn btn-primary">
+      View Cart
+      <% if (typeof cartCount !== 'undefined') { %>
+        <span class="badge bg-light text-dark ms-2"><%= cartCount %></span>
+      <% } %>
+    </a>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card shadow-soft p-4 h-100">
+        <h5 class="fw-bold mb-3">Cart Preview</h5>
+
+        <% if (!preview || preview.length === 0) { %>
+          <p class="mb-0">Your cart is empty. Browse storage spaces and add what you like.</p>
+          <div class="mt-3">
+            <a href="/storage" class="btn btn-outline-primary">Browse Storage</a>
+          </div>
+        <% } else { %>
+          <div class="list-group">
+            <% preview.forEach(i => { %>
+              <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="fw-semibold"><%= i.title %></div>
+                  <div class="small text-muted"><%= i.size %> • <%= i.location || 'N/A' %></div>
+                </div>
+                <div class="text-end">
+                  <div class="fw-semibold">x<%= i.quantity %></div>
+                  <div class="small text-muted">$<%= Number(i.unit_price).toFixed(2) %>/day</div>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+          <div class="mt-3 d-flex gap-2">
+            <a href="/cart" class="btn btn-primary">Go to Cart</a>
+            <a href="/storage" class="btn btn-outline-primary">Add More</a>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card shadow-soft p-4">
+        <h5 class="fw-bold mb-3">Quick Actions</h5>
+        <div class="d-grid gap-2">
+          <a href="/storage" class="btn btn-outline-primary">Browse Storage</a>
+          <a href="/cart" class="btn btn-outline-secondary">Manage Cart</a>
+          <a href="/logout" class="btn btn-outline-danger">Logout</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include("partials/footer") %>

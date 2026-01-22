@@ -1,0 +1,71 @@
+<%- include("partials/header", { title: title || "NETS QR Payment" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h3 class="mb-1">NETS QR Payment</h3>
+      <div class="text-muted small">Scan the QR code with your bank app to complete payment.</div>
+    </div>
+    <a href="/payment" class="btn btn-outline-primary btn-sm">Change Method</a>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="card shadow-soft">
+        <div class="card-body text-center">
+          <div class="fw-semibold mb-2">Total Amount</div>
+          <div class="fs-4 mb-3">$<%= Number(totalAmount).toFixed(2) %></div>
+          <img src="<%= qrCodeUrl %>" alt="NETS QR" style="max-width: 320px; width: 100%;">
+          <div class="small text-muted mt-3">Keep this page open while we verify payment.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card shadow-soft">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Payment Status</h5>
+          <div id="statusBox" class="alert alert-info mb-3">Waiting for payment...</div>
+          <div class="small text-muted">
+            If your payment does not complete, you can return to the payment page to try again.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const statusBox = document.getElementById("statusBox");
+  const txnRetrievalRef = "<%= txnRetrievalRef %>";
+  let source;
+
+  function setStatus(type, text) {
+    statusBox.className = "alert alert-" + type;
+    statusBox.textContent = text;
+  }
+
+  try {
+    source = new EventSource(`/sse/payment-status/${txnRetrievalRef}`);
+    source.addEventListener("message", (event) => {
+      const data = JSON.parse(event.data || "{}");
+      if (data.success) {
+        if (source) source.close();
+        setStatus("success", "Payment received! Redirecting...");
+        window.location.href = "/payment/success";
+        return;
+      }
+      if (data.fail) {
+        if (source) source.close();
+        setStatus("danger", "Payment failed or timed out. Please try again.");
+        return;
+      }
+      setStatus("info", "Waiting for payment...");
+    });
+  } catch (e) {
+    setStatus("danger", "Unable to check payment status.");
+  }
+</script>
+
+<%- include("partials/footer") %>

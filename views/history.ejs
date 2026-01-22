@@ -1,0 +1,54 @@
+<%- include("partials/header", { title: "Booking History" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Booking & Payment History</h3>
+    <a href="/storage" class="btn btn-outline-primary btn-sm">Browse Storage</a>
+  </div>
+
+  <div class="card shadow-soft">
+    <div class="table-responsive">
+      <table class="table table-striped mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Booking ID</th>
+            <th>Storage</th>
+            <th>Dates</th>
+            <th class="text-end">Total</th>
+            <th>Status</th>
+            <th>Payment</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (!rows || rows.length === 0) { %>
+            <tr><td colspan="6" class="text-center py-4 text-muted">No history yet.</td></tr>
+          <% } else { %>
+            <% rows.forEach(r => { %>
+              <tr>
+                <td class="text-muted">#<%= r.booking_id %></td>
+                <td>
+                  <div class="fw-semibold"><%= r.title || ('Storage #' + r.storage_id) %></div>
+                  <div class="small text-muted"><%= r.location || 'N/A' %> • <%= r.size || '' %></div>
+                </td>
+                <td><%= (r.start_date || '').toISOString ? r.start_date.toISOString().slice(0,10) : r.start_date %> → <%= (r.end_date || '').toISOString ? r.end_date.toISOString().slice(0,10) : r.end_date %></td>
+                <td class="text-end fw-semibold">$<%= Number(r.total_price).toFixed(2) %></td>
+                <td><span class="badge text-bg-secondary"><%= r.status %></span></td>
+                <td>
+                  <% if (r.payment_id) { %>
+                    <div class="small">#<%= r.payment_id %> • <%= r.method %></div>
+                    <div class="small text-muted"><%= r.payment_date ? new Date(r.payment_date).toISOString().slice(0,10) : '' %></div>
+                  <% } else { %>
+                    <span class="text-muted small">No payment</span>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<%- include("partials/footer") %>

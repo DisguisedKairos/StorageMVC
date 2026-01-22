@@ -1,0 +1,84 @@
+<%- include("partials/header", { title: "Admin - Bookings" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Bookings & Payments</h3>
+    <a href="/admin/dashboard" class="btn btn-outline-primary btn-sm">Back to Dashboard</a>
+  </div>
+
+  <div class="card shadow-soft">
+    <div class="table-responsive">
+      <table class="table table-striped mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Booking</th>
+            <th>User</th>
+            <th>Storage</th>
+            <th>Dates</th>
+            <th class="text-end">Amount</th>
+            <th>Payment</th>
+            <th>Refund</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (!bookings || bookings.length === 0) { %>
+            <tr><td colspan="7" class="text-center py-4 text-muted">No bookings yet.</td></tr>
+          <% } else { %>
+            <% bookings.forEach(r => { %>
+              <% const paidAmount = Number(r.amount || r.total_price || 0); %>
+              <% const refunded = Number(r.refunded_amount || 0); %>
+              <% const remaining = Math.max(0, paidAmount - refunded); %>
+              <tr>
+                <td class="text-muted">#<%= r.booking_id %></td>
+                <td>
+                  <div class="fw-semibold"><%= r.user_name || "User" %></div>
+                  <div class="small text-muted"><%= r.user_email || "" %></div>
+                </td>
+                <td>
+                  <div class="fw-semibold"><%= r.title || ("Storage #" + r.storage_id) %></div>
+                  <div class="small text-muted"><%= r.location || "N/A" %> • <%= r.size || "" %></div>
+                </td>
+                <td class="small">
+                  <%= (r.start_date || '').toISOString ? r.start_date.toISOString().slice(0,10) : r.start_date %>
+                  →
+                  <%= (r.end_date || '').toISOString ? r.end_date.toISOString().slice(0,10) : r.end_date %>
+                </td>
+                <td class="text-end fw-semibold">$<%= paidAmount.toFixed(2) %></td>
+                <td>
+                  <% if (r.payment_id) { %>
+                    <div class="small">#<%= r.payment_id %> • <%= r.method %></div>
+                    <div class="small text-muted"><%= r.payment_date ? new Date(r.payment_date).toISOString().slice(0,10) : '' %></div>
+                  <% } else { %>
+                    <span class="text-muted small">No payment</span>
+                  <% } %>
+                </td>
+                <td>
+                  <% if (r.payment_id) { %>
+                    <div class="small mb-2">
+                      Refunded: $<%= refunded.toFixed(2) %>
+                      (<%= r.refund_status || "NONE" %>)
+                    </div>
+                    <% if (remaining > 0) { %>
+                      <form action="/admin/payments/<%= r.payment_id %>/refund" method="POST" class="d-flex gap-2 align-items-center">
+                        <input type="number" step="0.01" min="0.01" max="<%= remaining.toFixed(2) %>" name="amount" class="form-control form-control-sm" placeholder="Amount" required>
+                        <input type="text" name="reason" class="form-control form-control-sm" placeholder="Reason (optional)">
+                        <button class="btn btn-sm btn-outline-warning">Refund</button>
+                      </form>
+                    <% } else { %>
+                      <span class="text-muted small">No refundable balance</span>
+                    <% } %>
+                  <% } else { %>
+                    <span class="text-muted small">N/A</span>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<%- include("partials/footer") %>

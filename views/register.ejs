@@ -1,0 +1,43 @@
+<%- include("partials/header", { title: "Register" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="d-flex align-items-center justify-content-center" style="min-height:75vh;">
+  <div class="card shadow-soft p-4" style="width:480px;">
+    <h4 class="mb-1">Create your account</h4>
+    <p class="small-muted mb-3">Join StorageHub — list or rent storage easily</p>
+
+    <form action="/register" method="POST">
+      <div class="row">
+        <div class="col-12 mb-3">
+          <label class="form-label">Full name</label>
+          <input required name="name" class="form-control" placeholder="Jane Doe">
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Email</label>
+          <input required name="email" type="email" class="form-control" placeholder="you@example.com">
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Password</label>
+          <input required name="password" type="password" class="form-control" placeholder="Choose a password">
+        </div>
+
+        <div class="col-12 mb-3">
+          <label class="form-label">Role</label>
+          <select name="role" class="form-select">
+            <option value="customer" selected>Customer</option>
+            <option value="admin">Admin</option>
+          </select>
+          <div class="form-text">Choose admin only for trusted accounts (you can change later).</div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary w-100">Register</button>
+    </form>
+
+    <p class="text-center small-muted mt-3">Already registered? <a href="/login">Login</a></p>
+  </div>
+</div>
+
+<%- include("partials/footer") %>

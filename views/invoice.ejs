@@ -1,0 +1,92 @@
+<%- include("partials/header", { title: "Invoice" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Invoice</h3>
+    <div class="d-flex gap-2">
+      <a href="/history" class="btn btn-outline-primary btn-sm">View History</a>
+      <a href="/storage" class="btn btn-primary btn-sm">Browse Storage</a>
+    </div>
+  </div>
+
+  <div class="card shadow-soft mb-4">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="fw-semibold">Invoice Ref</div>
+          <div class="text-muted"><%= header.invoiceRef %></div>
+        </div>
+        <div class="col-md-6">
+          <div class="fw-semibold">Payment Method</div>
+          <div class="text-muted"><%= header.paymentMethod %></div>
+        </div>
+        <div class="col-md-6">
+          <div class="fw-semibold">Booking Dates</div>
+          <div class="text-muted"><%= header.startDate %> to <%= header.endDate %> (<%= header.days %> day(s))</div>
+        </div>
+        <div class="col-md-6">
+          <div class="fw-semibold">Customer</div>
+          <div class="text-muted"><%= user.name %> (<%= user.email %>)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-soft">
+    <div class="table-responsive">
+      <table class="table table-striped mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Booking ID</th>
+            <th>Storage</th>
+            <th class="text-end">Qty</th>
+            <th class="text-end">Price/Day</th>
+            <th class="text-end">Days</th>
+            <th class="text-end">Line Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% items.forEach(i => { %>
+            <tr>
+              <td class="text-muted">#<%= i.booking_id %></td>
+              <td>
+                <div class="fw-semibold"><%= i.title %></div>
+                <div class="small text-muted"><%= i.location || 'N/A' %> • <%= i.size %></div>
+              </td>
+              <td class="text-end"><%= i.quantity %></td>
+              <td class="text-end">$<%= Number(i.unit_price).toFixed(2) %></td>
+              <td class="text-end"><%= i.days %></td>
+              <td class="text-end fw-semibold">$<%= Number(i.subtotal).toFixed(2) %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <div class="card-body">
+      <div class="d-flex justify-content-end">
+        <div style="min-width: 320px;">
+          <div class="d-flex justify-content-between">
+            <span class="text-muted">Subtotal</span>
+            <span class="fw-semibold">$<%= Number(header.subtotal).toFixed(2) %></span>
+          </div>
+          <div class="d-flex justify-content-between">
+            <span class="text-muted">Tax</span>
+            <span class="fw-semibold">$<%= Number(header.tax).toFixed(2) %></span>
+          </div>
+          <hr class="my-2">
+          <div class="d-flex justify-content-between">
+            <span class="fw-semibold">Total</span>
+            <span class="fw-bold">$<%= Number(header.totalAmount).toFixed(2) %></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="small text-muted mt-2">
+        Your cart has been cleared after checkout.
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include("partials/footer") %>

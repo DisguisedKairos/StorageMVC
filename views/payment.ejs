@@ -1,0 +1,95 @@
+<%- include("partials/header", { title: "Checkout" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Checkout</h3>
+    <a href="/cart" class="btn btn-outline-primary btn-sm">Back to Cart</a>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card shadow-soft">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Cart Summary (per day)</h5>
+
+          <div class="table-responsive">
+            <table class="table table-striped mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Storage</th>
+                  <th>Location</th>
+                  <th class="text-end">Qty</th>
+                  <th class="text-end">Price/Day</th>
+                  <th class="text-end">Subtotal/Day</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% items.forEach(i => { %>
+                  <tr>
+                    <td>
+                      <div class="fw-semibold"><%= i.title %></div>
+                      <div class="small text-muted"><%= i.size %></div>
+                    </td>
+                    <td><%= i.location || 'N/A' %></td>
+                    <td class="text-end"><%= i.quantity %></td>
+                    <td class="text-end">$<%= Number(i.unit_price).toFixed(2) %></td>
+                    <td class="text-end">$<%= (Number(i.unit_price) * Number(i.quantity)).toFixed(2) %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="d-flex justify-content-end mt-3">
+            <div class="fw-semibold">Total / Day:&nbsp;</div>
+            <div class="fw-bold">$<%= Number(totalPerDay).toFixed(2) %></div>
+          </div>
+          <div class="small text-muted mt-1">(Final total depends on selected dates.)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card shadow-soft">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Booking & Payment</h5>
+
+          <form action="/payment" method="POST" class="d-grid gap-3">
+            <div>
+              <label class="form-label">Start Date</label>
+              <input type="date" class="form-control" name="start_date" value="<%= startDate %>" required>
+            </div>
+
+            <div>
+              <label class="form-label">End Date</label>
+              <input type="date" class="form-control" name="end_date" value="<%= endDate %>" required>
+            </div>
+
+            <div>
+              <label class="form-label">Payment Method</label>
+              <select class="form-select" name="method" required>
+                <option value="PayNow">PayNow</option>
+                <option value="Credit Card">Credit Card</option>
+                <option value="Debit Card">Debit Card</option>
+                <option value="PayPal">PayPal</option>
+                <option value="NETSQR">NETS QR</option>
+                <option value="Stripe">Stripe</option>
+                <option value="Online">Online</option>
+                <option value="Cash">Cash</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Confirm & Generate Invoice</button>
+          </form>
+
+          <div class="small text-muted mt-3">
+            Note: A booking will be created for each storage item in your cart.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include("partials/footer") %>

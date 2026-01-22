@@ -1,0 +1,62 @@
+<%- include("partials/header", { title: "PayPal Checkout" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h3 class="mb-1">Pay with PayPal (Sandbox)</h3>
+      <div class="text-muted small">Complete your payment using the PayPal button below.</div>
+    </div>
+    <a href="/payment" class="btn btn-outline-primary btn-sm">Back</a>
+  </div>
+
+  <div class="card shadow-soft">
+    <div class="card-body">
+      <div class="mb-3">
+        <div class="fw-semibold">Total Amount</div>
+        <div class="fs-4">$<%= Number(totalAmount).toFixed(2) %></div>
+      </div>
+
+      <div id="paypal-button-container" class="mb-3"></div>
+      <div id="paypal-error" class="text-danger small"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PayPal JS SDK -->
+<script src="https://www.paypal.com/sdk/js?client-id=<%= paypalClientId %>&currency=SGD"></script>
+<script>
+  const errorEl = document.getElementById("paypal-error");
+  const showError = (msg) => { errorEl.textContent = msg || "Payment failed. Please try again."; };
+
+  if (!window.paypal) {
+    showError("PayPal SDK failed to load. Check your internet connection and PAYPAL_CLIENT_ID.");
+  } else {
+    paypal.Buttons({
+      createOrder: async () => {
+        const res = await fetch("/api/paypal/create-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to create PayPal order.");
+        return data.id;
+      },
+      onApprove: async (data) => {
+        const res = await fetch("/api/paypal/capture-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId: data.orderID || data.orderId })
+        });
+        const result = await res.json();
+        if (!res.ok || !result.ok) throw new Error(result.error || "Failed to capture PayPal order.");
+        if (result.redirect) window.location.href = result.redirect;
+      },
+      onError: (err) => {
+        showError(err && err.message ? err.message : "Payment failed.");
+      }
+    }).render("#paypal-button-container");
+  }
+</script>
+
+<%- include("partials/footer") %>
