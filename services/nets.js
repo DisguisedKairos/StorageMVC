@@ -1,84 +1,89 @@
 const axios = require("axios");
-const crypto = require("crypto");
 
-function getHeaders() {
-  const apiKey = (process.env.NETS_API_KEY || process.env.API_KEY || "").trim();
-  const projectId = (process.env.NETS_PROJECT_ID || process.env.PROJECT_ID || "").trim();
-  return {
-    "api-key": apiKey,
-    "project-id": projectId,
-    "Content-Type": "application/json",
-  };
-}
-
-function getBaseUrl() {
-  return (process.env.NETS_BASE_URL || "https://sandbox.nets.openapipaas.com").replace(/\/+$/, "");
-}
-
-function getPaths() {
-  return {
-    requestPath: process.env.NETS_QR_REQUEST_PATH || "/api/v1/common/payments/nets-qr/request",
-    queryPath: process.env.NETS_QR_QUERY_PATH || "/api/v1/common/payments/nets-qr/query",
-  };
-}
-
-async function requestQr({ amount, txnId, notifyMobile = 0 }) {
-  const baseUrl = getBaseUrl();
-  const { requestPath } = getPaths();
-  const url = `${baseUrl}${requestPath}`;
-
-  const fallbackTxnId =
-    (process.env.NETS_TXN_ID || "").trim() || `sandbox_nets|m|${crypto.randomUUID()}`;
-
-  const requestBody = {
-    txn_id: txnId || fallbackTxnId,
-    amt_in_dollars: (() => {
-      const parsed = Number.parseFloat(amount);
-      return Number.isFinite(parsed) ? parsed : amount;
-    })(),
-    notify_mobile: notifyMobile,
-  };
-
-  const headers = getHeaders();
-  console.log("NETS requestQr ->", { url, headers, requestBody });
-
-  let response;
+exports.generateQrCode = async (req, res) => {
+  const { cartTotal } = req.body;
+  console.log(cartTotal);
   try {
-    response = await axios.post(url, requestBody, { headers });
-  } catch (err) {
-    const status = err?.response?.status;
-    const data = err?.response?.data;
-    const respHeaders = err?.response?.headers;
-    console.error("NETS requestQr error ->", { url, status, data, respHeaders });
-    throw err;
+    const requestBody = {
+      txn_id: "sandbox_nets|m|8ff8e5b6-d43e-4786-8ac5-7accf8c5bd9b", // Default for testing
+      amt_in_dollars: cartTotal,
+      notify_mobile: 0,
+    };
+
+    const response = await axios.post(
+      `https://sandbox.nets.openapipaas.com/api/v1/common/payments/nets-qr/request`,
+      requestBody,
+      {
+        headers: {
+          "api-key": process.env.API_KEY,
+          "project-id": process.env.PROJECT_ID,
+        },
+      }
+    );
+
+    const getCourseInitIdParam = () => {
+      try {
+        require.resolve("./../course_init_id");
+        const { courseInitId } = require("../course_init_id");
+        console.log("Loaded courseInitId:", courseInitId);
+
+        return courseInitId ? `${courseInitId}` : "";
+      } catch (error) {
+        return "";
+      }
+    };
+
+    const qrData = response.data.result.data;
+    console.log({ qrData });
+
+    if (
+      qrData.response_code === "00" &&
+      qrData.txn_status === 1 &&
+      qrData.qr_code
+    ) {
+      console.log("QR code generated successfully");
+
+      // Store transaction retrieval reference for later use
+      const txnRetrievalRef = qrData.txn_retrieval_ref;
+      const courseInitId = getCourseInitIdParam();
+
+      const webhookUrl = `https://sandbox.nets.openapipaas.com/api/v1/common/payments/nets/webhook?txn_retrieval_ref=${txnRetrievalRef}&course_init_id=${courseInitId}`;
+
+      console.log("Transaction retrieval ref:" + txnRetrievalRef);
+      console.log("courseInitId:" + courseInitId);
+      console.log("webhookUrl:" + webhookUrl);
+
+      
+      // Render the QR code page with required data
+      res.render("netsQr", {
+        total: cartTotal,
+        title: "Scan to Pay",
+        qrCodeUrl: `data:image/png;base64,${qrData.qr_code}`,
+        txnRetrievalRef: txnRetrievalRef,
+        courseInitId: courseInitId,
+        networkCode: qrData.network_status,
+        timer: 300, // Timer in seconds
+        webhookUrl: webhookUrl,
+         fullNetsResponse: response.data,
+        apiKey: process.env.API_KEY,
+        projectId: process.env.PROJECT_ID,
+      });
+    } else {
+      // Handle partial or failed responses
+      let errorMsg = "An error occurred while generating the QR code.";
+      if (qrData.network_status !== 0) {
+        errorMsg =
+          qrData.error_message || "Transaction failed. Please try again.";
+      }
+      res.render("netsQrFail", {
+        title: "Error",
+        responseCode: qrData.response_code || "N.A.",
+        instructions: qrData.instruction || "",
+        errorMsg: errorMsg,
+      });
+    }
+  } catch (error) {
+    console.error("Error in generateQrCode:", error.message);
+    res.redirect("/nets-qr/fail");
   }
-
-  const data = response.data?.result?.data || response.data?.result?.data?.data || response.data?.result?.data || {};
-  const qrCodeBase64 = data.qr_code;
-  const txnRetrievalRef = data.txn_retrieval_ref;
-
-  const qrCodeDataUrl = qrCodeBase64 ? `data:image/png;base64,${qrCodeBase64}` : "";
-
-  return { qrCodeDataUrl, txnRetrievalRef, raw: response.data };
-}
-
-async function queryTxn({ txnRetrievalRef, frontendTimeoutStatus = 0 }) {
-  const baseUrl = getBaseUrl();
-  const { queryPath } = getPaths();
-
-  const body = {
-    txn_retrieval_ref: txnRetrievalRef,
-    frontend_timeout_status: frontendTimeoutStatus,
-  };
-
-  const response = await axios.post(`${baseUrl}${queryPath}`, body, { headers: getHeaders() });
-
-  const d = response.data?.result?.data || {};
-  return {
-    responseCode: String(d.response_code ?? ""),
-    txnStatus: Number(d.txn_status ?? 0),
-    raw: response.data,
-  };
-}
-
-module.exports = { requestQr, queryTxn };
+};

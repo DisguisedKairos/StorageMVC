@@ -147,33 +147,10 @@ module.exports = {
         }
 
         try {
-          const crypto = require("crypto");
           const nets = require("../services/nets");
-          const staticTxnId = (process.env.NETS_TXN_ID || "").trim();
-          const txnId = staticTxnId || `sandbox_nets|m|${crypto.randomUUID()}`;
           const amount = Number(summary.totalAmount) || 0;
-
-          const qr = await nets.requestQr({
-            amount: amount.toFixed(2),
-            txnId,
-            notifyMobile: 0
-          });
-
-          if (!qr.qrCodeDataUrl || !qr.txnRetrievalRef) {
-            return res.status(400).send("NETS QR did not return a valid response");
-          }
-
-          req.session.pendingPayment.txnRetrievalRef = qr.txnRetrievalRef;
-
-          return res.render("netsQr", {
-            title: "NETS QR Payment",
-            user: req.session.user,
-            totalAmount: amount,
-            qrCodeUrl: qr.qrCodeDataUrl,
-            txnRetrievalRef: qr.txnRetrievalRef,
-            apiKey: process.env.NETS_API_KEY || process.env.API_KEY || "",
-            projectId: process.env.NETS_PROJECT_ID || process.env.PROJECT_ID || "",
-          });
+          req.body.cartTotal = amount.toFixed(2);
+          return nets.generateQrCode(req, res);
         } catch (e) {
           console.error("NETS QR init error:", e);
           return res.status(400).send(e.message || "Could not start NETS QR payment");
@@ -223,6 +200,21 @@ module.exports = {
       user: req.session.user,
       header: data.header,
       items: data.items
+    });
+  },
+
+  // GET /payment/retry/:invoiceId -> reset pending invoice
+  paymentRetry: (req, res) => {
+    const user = req.session.user;
+    const invoiceId = parseInt(req.params.invoiceId, 10);
+    if (!user) return res.redirect("/login");
+    if (Number.isNaN(invoiceId)) return res.redirect("/payment");
+
+    Invoice.resetPendingPayment({ invoiceId, userId: user.id }, () => {
+      if (req.session.netsqr && req.session.netsqr[invoiceId]) {
+        delete req.session.netsqr[invoiceId];
+      }
+      return res.redirect("/payment");
     });
   },
 
@@ -370,12 +362,9 @@ module.exports = {
    * GET /sse/payment-status/:txnRetrievalRef
    */
   netsSsePaymentStatus: (req, res) => {
-    const user = req.session.user;
-    const pending = req.session.pendingPayment;
     const txnRetrievalRef = req.params.txnRetrievalRef;
-    if (!user) return res.status(401).end();
-    if (!pending || pending.method !== "NETSQR") return res.status(400).end();
-    if (!txnRetrievalRef || pending.txnRetrievalRef !== txnRetrievalRef) return res.status(400).end();
+    const pending = req.session.pendingPayment;
+    if (!txnRetrievalRef) return res.status(400).end();
 
     res.writeHead(200, {
       "Content-Type": "text/event-stream",
@@ -383,7 +372,6 @@ module.exports = {
       Connection: "keep-alive",
     });
 
-    const nets = require("../services/nets");
     const startedAt = Date.now();
     const MAX_MS = 5 * 60 * 1000;
     let interval = null;
@@ -411,21 +399,37 @@ module.exports = {
           return cleanup();
         }
 
-        const q = await nets.queryTxn({ txnRetrievalRef, frontendTimeoutStatus: 0 });
-        const responseCode = q.responseCode;
-        const txnStatus = q.txnStatus;
-        const success = String(responseCode) === "00" && Number(txnStatus) === 1;
+        const axios = require("axios");
+        const response = await axios.post(
+          "https://sandbox.nets.openapipaas.com/api/v1/common/payments/nets-qr/query",
+          { txn_retrieval_ref: txnRetrievalRef, frontend_timeout_status: 0 },
+          {
+            headers: {
+              "api-key": process.env.API_KEY || process.env.NETS_API_KEY,
+              "project-id": process.env.PROJECT_ID || process.env.NETS_PROJECT_ID,
+              "Content-Type": "application/json"
+            }
+          }
+        );
 
-        if (!success) {
-          send({ pending: true, responseCode, txnStatus });
+        res.write(`data: ${JSON.stringify(response.data)}\n\n`);
+
+        const resData = response.data?.result?.data || {};
+        if (resData.response_code !== "00" || resData.txn_status !== 1) {
+          send({ pending: true, responseCode: resData.response_code || "", txnStatus: resData.txn_status || 0 });
           return;
         }
 
         if (finalized) return;
         finalized = true;
 
+        if (!pending || pending.method !== "NETSQR") {
+          send({ success: true });
+          return cleanup();
+        }
+
         Invoice.createFromCart(
-          user.id,
+          req.session.user.id,
           pending.start_date,
           pending.end_date,
           "NETSQR",
@@ -459,6 +463,75 @@ module.exports = {
 
     pollOnce();
     interval = setInterval(pollOnce, 5000);
+  },
+
+  // GET /netsqr/fail/:invoiceId
+  netsQrFailPage: (req, res) => {
+    const invoiceId = parseInt(req.params.invoiceId, 10);
+    if (Number.isNaN(invoiceId)) return res.redirect("/payment");
+    return res.render("netsTxnFailStatus", {
+      user: req.session.user,
+      invoiceId,
+      message: "Transaction failed or timed out."
+    });
+  },
+
+  // GET /netsqr/pay/:invoiceId
+  netsQrPayPage: (req, res) => {
+    return res.redirect("/payment");
+  },
+
+  // GET /netsqr/status/:invoiceId
+  netsQrStatus: (req, res) => {
+    return res.status(400).json({ ok: false, error: "Not supported" });
+  },
+
+  /**
+   * POST /netsqr/webhook
+   * NETS server-to-server callback.
+   */
+  netsQrWebhook: (req, res) => {
+    try {
+      return res.status(200).json({ ok: true });
+    } catch (e) {
+      console.error("NETS webhook error:", e);
+      return res.status(200).json({ ok: true });
+    }
+  },
+
+  // GET /invoice/:id
+  viewInvoice: (req, res) => {
+    const user = req.session.user;
+    const invoiceId = parseInt(req.params.id, 10);
+    if (!user) return res.redirect("/login");
+    if (Number.isNaN(invoiceId)) return res.redirect("/payment");
+
+    Invoice.getById(invoiceId, user.id, (err, data) => {
+      if (err) return res.redirect("/payment");
+      const header = data.header || {};
+      const items = (data.items || []).map((it) => ({
+        ...it,
+        unit_price: Number(it.unit_price) || 0,
+        subtotal: Number(it.subtotal) || 0,
+        quantity: parseInt(it.quantity, 10) || 0,
+        days: parseInt(it.days, 10) || 0
+      }));
+
+      res.render("invoice", {
+        user,
+        header: {
+          invoiceRef: header.invoice_ref || header.invoiceRef || `INV-${invoiceId}`,
+          paymentMethod: header.payment_method || header.paymentMethod || "NETSQR",
+          startDate: header.start_date || header.startDate || "",
+          endDate: header.end_date || header.endDate || "",
+          days: header.days || 0,
+          subtotal: Number(header.subtotal) || 0,
+          tax: Number(header.tax) || 0,
+          totalAmount: Number(header.total_amount || header.totalAmount || 0)
+        },
+        items
+      });
+    });
   },
 
   // POST /admin/payments/:id/refund

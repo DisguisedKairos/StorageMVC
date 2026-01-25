@@ -1,71 +1,289 @@
-<%- include("partials/header", { title: title || "NETS QR Payment" }) %>
-<%- include("partials/navbar", { user: user }) %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/event-source-polyfill"></script>
+    <style>
+        :root {
+            --bg: #f6f7fb;
+            --ink: #121826;
+            --muted: #6b7280;
+            --card: #ffffff;
+            --accent: #0f5e2f;
+            --accent-2: #1f8a4c;
+            --ring: rgba(16, 185, 129, 0.18);
+            --shadow: 0 18px 60px rgba(15, 23, 42, 0.12);
+        }
 
-<div class="container container-max py-5">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h3 class="mb-1">NETS QR Payment</h3>
-      <div class="text-muted small">Scan the QR code with your bank app to complete payment.</div>
-    </div>
-    <a href="/payment" class="btn btn-outline-primary btn-sm">Change Method</a>
-  </div>
+        * { box-sizing: border-box; }
 
-  <div class="row g-4">
-    <div class="col-lg-6">
-      <div class="card shadow-soft">
-        <div class="card-body text-center">
-          <div class="fw-semibold mb-2">Total Amount</div>
-          <div class="fs-4 mb-3">$<%= Number(totalAmount).toFixed(2) %></div>
-          <img src="<%= qrCodeUrl %>" alt="NETS QR" style="max-width: 320px; width: 100%;">
-          <div class="small text-muted mt-3">Keep this page open while we verify payment.</div>
+        body {
+            margin: 0;
+            font-family: "Source Sans 3", "Segoe UI", Tahoma, Arial, sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(900px 480px at 5% 5%, #eef2ff, transparent 60%),
+                radial-gradient(900px 480px at 95% 0%, #ecfeff, transparent 60%),
+                var(--bg);
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 28px 16px;
+        }
+
+        .page {
+            width: min(980px, 100%);
+            background: var(--card);
+            border-radius: 22px;
+            box-shadow: var(--shadow);
+            padding: 28px;
+            border: 1px solid #eef2f7;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        h1 {
+            margin: 0 0 8px 0;
+            font-family: "Fraunces", "Times New Roman", serif;
+            font-size: clamp(28px, 3.2vw, 36px);
+        }
+
+        .lead { margin: 0; color: var(--muted); }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: #ecfdf3;
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 13px;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: minmax(260px, 1fr) minmax(260px, 320px);
+            gap: 20px;
+            align-items: center;
+        }
+
+        .qr-card {
+            background: #f9fafb;
+            border-radius: 18px;
+            padding: 20px;
+            border: 1px solid #eef2f7;
+        }
+
+        .qr-image {
+            width: min(320px, 100%);
+            display: block;
+            margin: 10px auto 0;
+            border-radius: 14px;
+            background: white;
+            padding: 10px;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+        }
+
+        .meta { display: grid; gap: 12px; }
+
+        .timer {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            background: #fff;
+            border: 1px dashed #d1d5db;
+            font-weight: 600;
+        }
+
+        .info {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .info img { width: 56px; height: auto; }
+
+        .actions {
+            margin-top: 12px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            border: 1px solid transparent;
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            color: #fff;
+            box-shadow: 0 10px 20px rgba(16, 185, 129, 0.25);
+        }
+
+        .btn-ghost {
+            color: var(--ink);
+            background: #fff;
+            border-color: #e5e7eb;
+        }
+
+        .btn:hover { transform: translateY(-1px); }
+
+        .note { margin-top: 8px; color: var(--muted); font-size: 13px; }
+
+        @media (max-width: 720px) {
+            .content { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="header">
+            <div>
+                <span class="pill">NETS QR</span>
+                <h1>Scan to pay</h1>
+                <p class="lead" id="status">Scan with your bank simulator app to complete payment.</p>
+            </div>
         </div>
-      </div>
-    </div>
 
-    <div class="col-lg-6">
-      <div class="card shadow-soft">
-        <div class="card-body">
-          <h5 class="card-title mb-3">Payment Status</h5>
-          <div id="statusBox" class="alert alert-info mb-3">Waiting for payment...</div>
-          <div class="small text-muted">
-            If your payment does not complete, you can return to the payment page to try again.
-          </div>
+        <div class="content">
+            <div class="qr-card">
+                <div class="timer" id="timer">Time remaining: 5:00</div>
+                <div class="note" style="margin-top: 8px; font-weight: 600;">
+                    Amount: $<%= Number(total || 0).toFixed(2) %>
+                </div>
+                <img class="qr-image" src="<%= qrCodeUrl %>" alt="QR Code" />
+                <div class="note">Keep this page open until payment completes.</div>
+            </div>
+
+            <div class="meta">
+                <div class="qr-card" style="padding: 14px 16px;">
+                    <div class="note" style="margin: 0 0 6px 0; font-weight: 600;">Payment Reference</div>
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <code id="txnRef" style="background:#fff; padding:6px 10px; border-radius:8px; border:1px dashed #d1d5db;"><%= txnRetrievalRef %></code>
+                        <button class="btn btn-ghost" id="copyRef" type="button">Copy</button>
+                    </div>
+                </div>
+                <div class="info">
+                    <img src="/images/netsQrInfo.png" alt="NETS info" />
+                    <div>Use the NETS bank simulator app to scan the QR and approve the payment.</div>
+                </div>
+                <div class="actions">
+                    <a class="btn btn-primary" href="/payment">Back to Payment</a>
+                    <a class="btn btn-ghost" href="/">Cancel</a>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
-</div>
 
-<script>
-  const statusBox = document.getElementById("statusBox");
-  const txnRetrievalRef = "<%= txnRetrievalRef %>";
-  let source;
+    <script>
+        let s2sNetsTxnStatus; // Declare a variable to hold the EventSource instance
 
-  function setStatus(type, text) {
-    statusBox.className = "alert alert-" + type;
-    statusBox.textContent = text;
-  }
+        if (s2sNetsTxnStatus) {
+            s2sNetsTxnStatus.close();
+        }
 
-  try {
-    source = new EventSource(`/sse/payment-status/${txnRetrievalRef}`);
-    source.addEventListener("message", (event) => {
-      const data = JSON.parse(event.data || "{}");
-      if (data.success) {
-        if (source) source.close();
-        setStatus("success", "Payment received! Redirecting...");
-        window.location.href = "/payment/success";
-        return;
-      }
-      if (data.fail) {
-        if (source) source.close();
-        setStatus("danger", "Payment failed or timed out. Please try again.");
-        return;
-      }
-      setStatus("info", "Waiting for payment...");
-    });
-  } catch (e) {
-    setStatus("danger", "Unable to check payment status.");
-  }
-</script>
+        const txnRetrievalRef = "<%= txnRetrievalRef %>"; // Transaction reference
+        const courseInitId = "<%= courseInitId %>"; // Course Init ID
+        const url = `/sse/payment-status/${txnRetrievalRef}`; 
+   
+        const headers = {
+            "api-key": "<%= apiKey %>",
+            "project-id": "<%= projectId %>",
+        };
 
-<%- include("partials/footer") %>
+        console.log("NETS REQUEST response:", <%- JSON.stringify(fullNetsResponse) %>);
+
+
+        // Initialize EventSourcePolyfill with headers
+        s2sNetsTxnStatus = new EventSourcePolyfill(url, {
+            headers: headers,
+            heartbeatTimeout: 150000,
+        });
+
+        s2sNetsTxnStatus.addEventListener("message", (event) => {
+            const data = JSON.parse(event.data);
+            console.log("NETS Query Response:", data);
+
+            // Check for payment success
+            if (data.success) {
+                if (s2sNetsTxnStatus) s2sNetsTxnStatus.close();
+                window.location.href = `/nets-qr/success?txn_retrieval_ref=${txnRetrievalRef}`;
+            } else if (data.fail) {
+                if (s2sNetsTxnStatus) s2sNetsTxnStatus.close();
+                window.location.href = `/nets-qr/fail?txn_retrieval_ref=${txnRetrievalRef}`;
+            }
+        });
+
+        console.log("Initialized EventSourcePolyfill");
+
+        // Countdown Timer Logic
+        const timerElement = document.getElementById("timer");
+        const countdownDuration = 300; // 5 minutes in seconds
+        let remainingTime = countdownDuration;
+
+        const updateTimer = () => {
+            const minutes = Math.floor(remainingTime / 60);
+            const seconds = remainingTime % 60;
+            timerElement.textContent = `Time remaining: ${minutes}:${seconds.toString().padStart(2, "0")}`;
+            remainingTime--;
+
+            if (remainingTime < 0) {
+                clearInterval(timerInterval);
+                timerElement.textContent = "Transaction timed out.";
+
+                if (s2sNetsTxnStatus) {
+                    s2sNetsTxnStatus.close();
+                }
+                window.location.href = `/nets-qr/fail?txn_retrieval_ref=${txnRetrievalRef}`; // Redirect to fail page
+            }
+        };
+
+        // Start the timer
+        const timerInterval = setInterval(updateTimer, 1000);
+        updateTimer(); // Initial call to set the timer immediately
+
+        const copyBtn = document.getElementById("copyRef");
+        const refEl = document.getElementById("txnRef");
+        if (copyBtn && refEl) {
+            copyBtn.addEventListener("click", async () => {
+                try {
+                    await navigator.clipboard.writeText(refEl.textContent || "");
+                    copyBtn.textContent = "Copied";
+                    setTimeout(() => { copyBtn.textContent = "Copy"; }, 1200);
+                } catch (_) {
+                    // ignore
+                }
+            });
+        }
+
+    </script>
+</body>
+
+</html>

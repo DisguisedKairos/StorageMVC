@@ -8,6 +8,7 @@ const app = express();
 // Middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
 
 // Session Setup
 app.use(
@@ -97,11 +98,65 @@ app.post("/checkout", invoiceController.checkout);
 app.get("/payment", invoiceController.paymentForm);
 app.post("/payment", invoiceController.processPayment);
 app.get("/payment/success", invoiceController.paymentSuccess);
+app.get("/payment/retry/:invoiceId", invoiceController.paymentRetry);
 app.post("/api/paypal/create-order", invoiceController.paypalApiCreateOrder);
 app.post("/api/paypal/capture-order", invoiceController.paypalApiCaptureOrder);
 app.get("/stripe/success", invoiceController.stripeSuccess);
 app.get("/stripe/cancel", invoiceController.stripeCancel);
 app.get("/sse/payment-status/:txnRetrievalRef", invoiceController.netsSsePaymentStatus);
+app.post("/generateNETSQR", (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+    const netsQrService = require("./services/nets");
+    return netsQrService.generateQrCode(req, res);
+});
+app.get("/nets-qr/success", (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+    const Invoice = require("./models/Invoice");
+    const txnRetrievalRef = (req.query.txn_retrieval_ref || "").trim();
+
+    if (!txnRetrievalRef) {
+        return res.render("netsTxnSuccessStatus", {
+            message: "Transaction Successful!",
+            invoiceId: null,
+            paymentMethod: null
+        });
+    }
+
+    Invoice.findByProviderRef("NETSQR", txnRetrievalRef, (err, row) => {
+        if (err || !row || row.user_id !== req.session.user.id) {
+            return res.render("netsTxnSuccessStatus", {
+                message: "Transaction Successful!",
+                invoiceId: null,
+                paymentMethod: null
+            });
+        }
+
+        return res.render("netsTxnSuccessStatus", {
+            message: "Transaction Successful!",
+            invoiceId: row.id,
+            paymentMethod: row.payment_method || null
+        });
+    });
+});
+app.get("/nets-qr/fail", (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+    return res.render("netsTxnFailStatus", { message: "Transaction Failed. Please try again." });
+});
+app.get("/shopping", (req, res) => res.redirect("/storage"));
+app.get("/netsqr/fail/:invoiceId", (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+    return invoiceController.netsQrFailPage(req, res);
+});
+app.get("/netsqr/pay/:invoiceId", (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+    return invoiceController.netsQrPayPage(req, res);
+});
+app.get("/netsqr/status/:invoiceId", (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+    return invoiceController.netsQrStatus(req, res);
+});
+app.post("/netsqr/webhook", express.json({ type: "*/*" }), (req, res) => invoiceController.netsQrWebhook(req, res));
+app.get("/invoice/:id", (req, res) => invoiceController.viewInvoice(req, res));
 app.get("/history", invoiceController.history);
 
 // ADMIN DASHBOARD (The main storage list view)
