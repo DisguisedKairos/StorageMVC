@@ -22,6 +22,16 @@
           <div class="text-muted"><%= header.paymentMethod %></div>
         </div>
         <div class="col-md-6">
+          <div class="fw-semibold">Payment Reference</div>
+          <div class="text-muted"><%= header.paymentRef || header.providerRef || 'N/A' %></div>
+        </div>
+        <div class="col-md-6">
+          <div class="fw-semibold">Payment Date</div>
+          <div class="text-muted">
+            <%= header.paymentDate ? new Date(header.paymentDate).toLocaleString() : 'N/A' %>
+          </div>
+        </div>
+        <div class="col-md-6">
           <div class="fw-semibold">Booking Dates</div>
           <div class="text-muted"><%= header.startDate %> to <%= header.endDate %> (<%= header.days %> day(s))</div>
         </div>

@@ -529,7 +529,17 @@ module.exports = {
     if (Number.isNaN(invoiceId)) return res.redirect("/payment");
 
     Invoice.getById(invoiceId, user.id, (err, data) => {
-      if (err) return res.redirect("/payment");
+      if (err) {
+        return Invoice.getByBookingId(invoiceId, user.id, (bkErr, bkData) => {
+          if (bkErr) return res.redirect("/payment");
+          return res.render("invoice", {
+            user,
+            header: bkData.header,
+            items: bkData.items
+          });
+        });
+      }
+
       const header = data.header || {};
       const items = (data.items || []).map((it) => ({
         ...it,
@@ -544,6 +554,8 @@ module.exports = {
         header: {
           invoiceRef: header.invoice_ref || header.invoiceRef || `INV-${invoiceId}`,
           paymentMethod: header.payment_method || header.paymentMethod || "NETSQR",
+          paymentRef: header.provider_ref || header.providerRef || null,
+          paymentDate: header.paid_at || header.paidAt || null,
           startDate: header.start_date || header.startDate || "",
           endDate: header.end_date || header.endDate || "",
           days: header.days || 0,
@@ -582,7 +594,49 @@ module.exports = {
     const userId = req.session.user.id;
     Invoice.listHistoryByUser(userId, (err, rows) => {
       if (err) return res.status(500).send("Database error");
-      res.render("history", { user: req.session.user, rows });
+      Invoice.listInvoicesByUser(userId, (errInv, invoices) => {
+        if (errInv) return res.status(500).send("Database error");
+
+        const bookingRows = (rows || []).map((r) => ({
+          type: "Booking",
+          id: r.booking_id,
+          ref: `BOOKING-${r.booking_id}`,
+          title: r.title || `Storage #${r.storage_id}`,
+          location: r.location || "N/A",
+          size: r.size || "",
+          startDate: r.start_date,
+          endDate: r.end_date,
+          total: Number(r.total_price) || 0,
+          status: r.status || "Pending",
+          paymentMethod: r.method || "N/A",
+          paymentDate: r.payment_date || null,
+          viewLink: r.booking_id ? `/invoice/${r.booking_id}` : null
+        }));
+
+        const invoiceRows = (invoices || []).map((r) => ({
+          type: "Invoice",
+          id: r.id,
+          ref: r.invoice_ref || `INV-${r.id}`,
+          title: "Invoice",
+          location: "",
+          size: "",
+          startDate: r.start_date,
+          endDate: r.end_date,
+          total: Number(r.total_amount) || 0,
+          status: r.status || "PENDING",
+          paymentMethod: r.payment_method || "N/A",
+          paymentDate: r.paid_at || null,
+          viewLink: `/invoice/${r.id}`
+        }));
+
+        const combined = [...bookingRows, ...invoiceRows].sort((a, b) => {
+          const aDate = new Date(a.paymentDate || a.endDate || a.startDate || 0).getTime();
+          const bDate = new Date(b.paymentDate || b.endDate || b.startDate || 0).getTime();
+          return bDate - aDate;
+        });
+
+        res.render("history", { user: req.session.user, combined });
+      });
     });
   }
 };

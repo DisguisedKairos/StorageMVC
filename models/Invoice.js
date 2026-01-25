@@ -110,8 +110,8 @@ module.exports = {
               const bookingId = bRes.insertId;
 
               const paymentSql = `
-                INSERT INTO payments (booking_id, amount, method)
-                VALUES (?, ?, ?)
+                INSERT INTO payments (booking_id, amount, method, payment_date)
+                VALUES (?, ?, ?, NOW())
               `;
               db.query(paymentSql, [bookingId, it.subtotal, paymentMethod], (pErr, pRes) => {
                 if (pErr) return db.rollback(() => callback(pErr));
@@ -290,8 +290,8 @@ module.exports = {
             VALUES (?, ?, ?, ?, ?, 'Paid')
           `;
           const paymentSql = `
-            INSERT INTO payments (booking_id, amount, method)
-            VALUES (?, ?, ?)
+            INSERT INTO payments (booking_id, amount, method, payment_date)
+            VALUES (?, ?, ?, NOW())
           `;
 
           let i = 0;
@@ -412,6 +412,77 @@ module.exports = {
     });
   },
 
+  /**
+   * Fallback: build an invoice view from a booking id.
+   * This supports StorageMVC's booking-based flow.
+   */
+  getByBookingId: (bookingId, userId, callback) => {
+    const sql = `
+      SELECT
+        b.booking_id,
+        b.user_id,
+        b.storage_id,
+        b.start_date,
+        b.end_date,
+        b.total_price,
+        b.status,
+        p.payment_id,
+        p.method AS payment_method,
+        p.payment_date,
+        s.title,
+        s.location,
+        s.size
+      FROM bookings b
+      LEFT JOIN payments p ON p.booking_id = b.booking_id
+      LEFT JOIN storage_spaces s ON s.storage_id = b.storage_id
+      WHERE b.booking_id = ? AND b.user_id = ?
+      LIMIT 1
+    `;
+
+    db.query(sql, [bookingId, userId], (err, rows) => {
+      if (err) return callback(err);
+      if (!rows || rows.length === 0) return callback(new Error("Booking not found"));
+
+      const row = rows[0];
+      const startDate = row.start_date;
+      const endDate = row.end_date;
+      const days = daysBetweenInclusive(
+        startDate && startDate.toISOString ? startDate.toISOString().slice(0, 10) : startDate,
+        endDate && endDate.toISOString ? endDate.toISOString().slice(0, 10) : endDate
+      ) || 0;
+
+      const header = {
+        invoiceRef: `BOOKING-${row.booking_id}`,
+        startDate,
+        endDate,
+        days,
+        subtotal: Number(row.total_price) || 0,
+        tax: 0,
+        totalAmount: Number(row.total_price) || 0,
+        paymentMethod: row.payment_method || "N/A",
+        status: row.status || "Pending",
+        paymentRef: row.payment_id ? `PAY-${row.payment_id}` : null,
+        paymentDate: row.payment_date || null
+      };
+
+      const items = [
+        {
+          booking_id: row.booking_id,
+          storage_id: row.storage_id,
+          title: row.title,
+          location: row.location,
+          size: row.size,
+          quantity: 1,
+          unit_price: Number(row.total_price) || 0,
+          days,
+          subtotal: Number(row.total_price) || 0
+        }
+      ];
+
+      return callback(null, { header, items });
+    });
+  },
+
   resetPendingPayment: ({ invoiceId, userId }, callback) => {
     const sql = `
       UPDATE invoice
@@ -450,6 +521,33 @@ module.exports = {
       LEFT JOIN storage_spaces s ON s.storage_id = b.storage_id
       WHERE b.user_id = ?
       ORDER BY b.booking_id DESC
+    `;
+    db.query(sql, [userId], callback);
+  },
+
+  /**
+   * List NETS invoice records for the current user.
+   */
+  listInvoicesByUser: (userId, callback) => {
+    const sql = `
+      SELECT
+        id,
+        invoice_ref,
+        start_date,
+        end_date,
+        days,
+        subtotal,
+        tax,
+        total_amount,
+        status,
+        payment_method,
+        provider,
+        provider_ref,
+        created_at,
+        paid_at
+      FROM invoice
+      WHERE user_id = ?
+      ORDER BY created_at DESC, id DESC
     `;
     db.query(sql, [userId], callback);
   },
