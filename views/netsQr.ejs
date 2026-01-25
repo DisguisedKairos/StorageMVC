@@ -225,17 +225,42 @@
         s2sNetsTxnStatus = new EventSourcePolyfill(url, {
             headers: headers,
             heartbeatTimeout: 150000,
+            withCredentials: true,
         });
 
         s2sNetsTxnStatus.addEventListener("message", (event) => {
             const data = JSON.parse(event.data);
             console.log("NETS Query Response:", data);
 
-            // Check for payment success
+            // NETS demo sends full response; support both formats
             if (data.success) {
                 if (s2sNetsTxnStatus) s2sNetsTxnStatus.close();
                 window.location.href = `/nets-qr/success?txn_retrieval_ref=${txnRetrievalRef}`;
-            } else if (data.fail) {
+                return;
+            }
+
+            const resData = data?.result?.data || data;
+            const responseCode = resData?.response_code;
+            const txnStatus = resData?.txn_status;
+
+            if (responseCode === "00" && Number(txnStatus) === 1) {
+                if (s2sNetsTxnStatus) s2sNetsTxnStatus.close();
+                fetch("/netsqr/finalize", { method: "POST", credentials: "same-origin" })
+                    .then((r) => r.json())
+                    .then((r) => {
+                        if (r && r.ok) {
+                            window.location.href = `/nets-qr/success?txn_retrieval_ref=${txnRetrievalRef}`;
+                        } else {
+                            window.location.href = `/nets-qr/success?txn_retrieval_ref=${txnRetrievalRef}`;
+                        }
+                    })
+                    .catch(() => {
+                        window.location.href = `/nets-qr/success?txn_retrieval_ref=${txnRetrievalRef}`;
+                    });
+                return;
+            }
+
+            if (data.fail) {
                 if (s2sNetsTxnStatus) s2sNetsTxnStatus.close();
                 window.location.href = `/nets-qr/fail?txn_retrieval_ref=${txnRetrievalRef}`;
             }

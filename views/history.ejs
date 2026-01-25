@@ -25,6 +25,9 @@
             <tr><td colspan="6" class="text-center py-4 text-muted">No history yet.</td></tr>
           <% } else { %>
             <% rows.forEach(r => { %>
+              <% const hasPayment = !!r.payment_id; %>
+              <% const statusLabel = hasPayment ? 'Paid' : (r.status || 'Pending'); %>
+              <% const statusClass = hasPayment ? 'text-bg-success' : 'text-bg-secondary'; %>
               <tr>
                 <td class="text-muted">#<%= r.booking_id %></td>
                 <td>
@@ -33,7 +36,7 @@
                 </td>
                 <td><%= (r.start_date || '').toISOString ? r.start_date.toISOString().slice(0,10) : r.start_date %> → <%= (r.end_date || '').toISOString ? r.end_date.toISOString().slice(0,10) : r.end_date %></td>
                 <td class="text-end fw-semibold">$<%= Number(r.total_price).toFixed(2) %></td>
-                <td><span class="badge text-bg-secondary"><%= r.status %></span></td>
+                <td><span class="badge <%= statusClass %>"><%= statusLabel %></span></td>
                 <td>
                   <% if (r.payment_id) { %>
                     <div class="small">#<%= r.payment_id %> • <%= r.method %></div>

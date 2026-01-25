@@ -156,6 +156,7 @@ app.get("/netsqr/status/:invoiceId", (req, res) => {
 app.post("/netsqr/webhook", express.json({ type: "*/*" }), (req, res) =>
   invoiceController.netsQrWebhook(req, res)
 );
+app.post("/netsqr/finalize", (req, res) => invoiceController.netsQrFinalize(req, res));
 app.get("/invoice/:id", (req, res) => invoiceController.viewInvoice(req, res));
 
 /* ---------- ADMIN DASHBOARD ---------- */

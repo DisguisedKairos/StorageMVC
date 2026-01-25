@@ -364,7 +364,11 @@ module.exports = {
   netsSsePaymentStatus: (req, res) => {
     const txnRetrievalRef = req.params.txnRetrievalRef;
     const pending = req.session.pendingPayment;
+    if (!req.session.user) return res.status(401).end();
     if (!txnRetrievalRef) return res.status(400).end();
+    if (!pending || pending.method !== "NETSQR") {
+      return res.status(400).end();
+    }
 
     res.writeHead(200, {
       "Content-Type": "text/event-stream",
@@ -423,11 +427,6 @@ module.exports = {
         if (finalized) return;
         finalized = true;
 
-        if (!pending || pending.method !== "NETSQR") {
-          send({ success: true });
-          return cleanup();
-        }
-
         Invoice.createFromCart(
           req.session.user.id,
           pending.start_date,
@@ -484,6 +483,29 @@ module.exports = {
   // GET /netsqr/status/:invoiceId
   netsQrStatus: (req, res) => {
     return res.status(400).json({ ok: false, error: "Not supported" });
+  },
+
+  // POST /netsqr/finalize -> finalize booking/payment after NETS success
+  netsQrFinalize: (req, res) => {
+    const user = req.session.user;
+    const pending = req.session.pendingPayment;
+    if (!user) return res.status(401).json({ ok: false, error: "Not logged in" });
+    if (!pending || pending.method !== "NETSQR") {
+      return res.status(400).json({ ok: false, error: "No pending NETS payment" });
+    }
+
+    Invoice.createFromCart(
+      user.id,
+      pending.start_date,
+      pending.end_date,
+      "NETSQR",
+      (err, data) => {
+        if (err) return res.status(400).json({ ok: false, error: err.message || "checkout_failed" });
+        req.session.lastInvoice = data;
+        delete req.session.pendingPayment;
+        return res.json({ ok: true });
+      }
+    );
   },
 
   /**
