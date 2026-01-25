@@ -1,0 +1,58 @@
+<%- include('../partials/header', { title: 'Rental Analytics' }) %>
+<%- include('../partials/navbar') %>
+
+<div class="container py-5">
+  <h3 class="mb-4">📊 Rental Analytics Dashboard</h3>
+
+  <div class="row g-4">
+    <div class="col-md-3">
+      <div class="card p-3 text-center">
+        <h6>Total Revenue</h6>
+        <h4>$<%= revenue.toFixed(2) %></h4>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card p-3 text-center">
+        <h6>Total Bookings</h6>
+        <h4><%= totalBookings %></h4>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card p-3 text-center">
+        <h6>Currently Rented</h6>
+        <h4><%= rentedCount %></h4>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card p-3 text-center">
+        <h6>Most Rented</h6>
+        <h5><%= popular ? popular.title : 'N/A' %></h5>
+      </div>
+    </div>
+  </div>
+
+  <hr class="my-4">
+
+  <h5>Monthly Revenue</h5>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Month</th>
+        <th>Revenue ($)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% monthly.forEach(m => { %>
+        <tr>
+          <td><%= m.month %></td>
+          <td><%= m.revenue.toFixed(2) %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<%- include('../partials/footer') %>
