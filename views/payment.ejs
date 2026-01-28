@@ -45,6 +45,10 @@
             <div class="fw-semibold">Total / Day:&nbsp;</div>
             <div class="fw-bold">$<%= Number(totalPerDay).toFixed(2) %></div>
           </div>
+          <div class="d-flex justify-content-end mt-2">
+            <div class="fw-semibold">Estimated Total:&nbsp;</div>
+            <div class="fw-bold">$<%= Number(totalAmount || 0).toFixed(2) %></div>
+          </div>
           <div class="small text-muted mt-1">(Final total depends on selected dates.)</div>
         </div>
       </div>
@@ -68,13 +72,51 @@
 
             <div>
               <label class="form-label">Payment Method</label>
-              <select class="form-select" name="method" required>
-                <option value="PayNow">PayNow</option>
-                <option value="Cash">Cash</option>
-                <option value="PayPal">PayPal</option>
-                <option value="NETSQR">NETS QR</option>
-                <option value="Stripe">Stripe</option>
-              </select>
+              <div class="list-group">
+                <label class="list-group-item d-flex gap-3 align-items-center">
+                  <input class="form-check-input" type="radio" name="paymentMethod" value="Stripe" <%= selectedMethod === 'Stripe' ? 'checked' : '' %> required>
+                  <div>
+                    <div class="fw-semibold">Stripe</div>
+                    <small class="text-muted">Card payment via Stripe</small>
+                  </div>
+                </label>
+
+                <label class="list-group-item d-flex gap-3 align-items-center">
+                  <input class="form-check-input" type="radio" name="paymentMethod" value="PayPal" <%= selectedMethod === 'PayPal' ? 'checked' : '' %>>
+                  <div>
+                    <div class="fw-semibold">PayPal (Sandbox)</div>
+                    <small class="text-muted">Pay with PayPal button</small>
+                  </div>
+                </label>
+
+                <label class="list-group-item d-flex gap-3 align-items-center">
+                  <input class="form-check-input" type="radio" name="paymentMethod" value="NETSQR" <%= selectedMethod === 'NETSQR' ? 'checked' : '' %>>
+                  <div>
+                    <div class="fw-semibold">NETS QR</div>
+                    <small class="text-muted">Scan with your bank app</small>
+                  </div>
+                </label>
+
+                <label class="list-group-item d-flex gap-3 align-items-center">
+                  <input class="form-check-input" type="radio" name="paymentMethod" value="EWallet"
+                    <%= selectedMethod === 'EWallet' ? 'checked' : '' %>
+                    <%= (walletBalance || 0) < Number(totalAmount || 0) ? 'disabled' : '' %>>
+                  <div>
+                    <div class="fw-semibold">E-Wallet</div>
+                    <small class="text-muted">
+                      Pay using wallet balance (available $<%= Number(walletBalance || 0).toFixed(2) %>)
+                    </small>
+                  </div>
+                </label>
+
+                <label class="list-group-item d-flex gap-3 align-items-center">
+                  <input class="form-check-input" type="radio" name="paymentMethod" value="Cash" <%= selectedMethod === 'Cash' ? 'checked' : '' %>>
+                  <div>
+                    <div class="fw-semibold">Cash</div>
+                    <small class="text-muted">Pay on arrival</small>
+                  </div>
+                </label>
+              </div>
             </div>
 
             <button type="submit" class="btn btn-primary">Proceed to Payment</button>

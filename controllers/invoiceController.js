@@ -1,5 +1,6 @@
 const Cart = require("../models/Cart");
 const Invoice = require("../models/Invoice");
+const User = require("../models/User");
 
 function parseDateOnly(str) {
   const d = new Date(`${str}T00:00:00`);
@@ -67,24 +68,30 @@ module.exports = {
     if (guard) return;
 
     const userId = req.session.user.id;
-    Cart.getItemsByUser(userId, (err, items) => {
+    // default dates: today -> today + 6 days
+    const today = new Date();
+    const fmt = (d) => d.toISOString().slice(0, 10);
+    const startDate = fmt(today);
+    const endDate = fmt(new Date(today.getTime() + 6 * 24 * 60 * 60 * 1000));
+
+    computeCartTotals(userId, startDate, endDate, (err, summary) => {
       if (err) return res.status(500).send("Database error");
-      if (!items || items.length === 0) return res.redirect("/cart");
 
-      const totalPerDay = items.reduce((sum, i) => sum + Number(i.unit_price) * Number(i.quantity), 0);
+      User.getWalletBalance(userId, (errW, walletBalance) => {
+        if (!errW) req.session.user.walletBalance = walletBalance;
 
-      // default dates: today -> today + 6 days
-      const today = new Date();
-      const fmt = (d) => d.toISOString().slice(0, 10);
-      const startDate = fmt(today);
-      const endDate = fmt(new Date(today.getTime() + 6 * 24 * 60 * 60 * 1000));
-
-      res.render("payment", {
-        user: req.session.user,
-        items,
-        totalPerDay,
-        startDate,
-        endDate
+        res.render("payment", {
+          user: req.session.user,
+          items: summary.items,
+          totalPerDay: summary.totalPerDay,
+          startDate,
+          endDate,
+          subtotal: summary.subtotal,
+          tax: summary.tax,
+          totalAmount: summary.totalAmount,
+          walletBalance: walletBalance || 0,
+          selectedMethod: req.session.paymentMethod || ""
+        });
       });
     });
   },
@@ -95,12 +102,48 @@ module.exports = {
     if (guard) return;
 
     const userId = req.session.user.id;
-    const { start_date, end_date, method } = req.body;
+    const { start_date, end_date, method, paymentMethod: paymentMethodBody } = req.body;
 
-    const paymentMethod = (method || "").trim();
-    const allowed = ["PayNow", "Cash", "PayPal", "NETSQR", "Stripe"];
+    const paymentMethod = (paymentMethodBody || method || "").trim();
+    const allowed = ["Stripe", "Cash", "PayPal", "NETSQR", "EWallet"];
     if (!allowed.includes(paymentMethod)) {
       return res.status(400).send("Invalid payment method");
+    }
+
+    if (paymentMethod === "EWallet") {
+      return computeCartTotals(userId, start_date, end_date, (err, summary) => {
+        if (err) return res.status(400).send(err.message || "Checkout failed");
+
+        const totalAmount = Number(summary.totalAmount) || 0;
+        User.getWalletBalance(userId, (errW, balance) => {
+          if (errW) return res.status(500).send("Could not load wallet balance");
+          if (balance < totalAmount) return res.status(400).send("Insufficient wallet balance");
+
+          Invoice.createFromCart(userId, start_date, end_date, "EWallet", (errInv, data) => {
+            if (errInv) return res.status(400).send(errInv.message || "Checkout failed");
+
+            User.adjustWalletBalance(userId, -totalAmount, () => {});
+
+            data.header.subtotal = Number(data.header.subtotal) || 0;
+            data.header.tax = Number(data.header.tax) || 0;
+            data.header.totalAmount = Number(data.header.totalAmount) || 0;
+            data.items = (data.items || []).map((it) => ({
+              ...it,
+              unit_price: Number(it.unit_price) || 0,
+              subtotal: Number(it.subtotal) || 0,
+              quantity: parseInt(it.quantity, 10) || 0,
+              days: parseInt(it.days, 10) || 0
+            }));
+
+            return res.render("invoice", {
+              user: req.session.user,
+              header: data.header,
+              items: data.items,
+              paymentMethod: "EWallet"
+            });
+          });
+        });
+      });
     }
 
     if (paymentMethod === "PayPal" || paymentMethod === "NETSQR" || paymentMethod === "Stripe") {
