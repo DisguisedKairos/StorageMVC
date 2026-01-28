@@ -1,65 +1,67 @@
 const Storage = require("../models/Storage");
 const User = require("../models/User");
 const Booking = require("../models/Booking");
+const Report = require("../models/Report");
 
 module.exports = {
     // ===== DASHBOARD =====
     dashboard: (req, res) => {
-    Storage.getAll((err, storage) => {
-        User.getAll((err, users) => {
-            Booking.getAll((err, bookings) => {
+        Storage.getAll((errS, storage) => {
+            User.getAll((errU, users) => {
+                Booking.getAll((errB, bookings) => {
+                    Report.getOverview((errR, overview) => {
+                        const totalStorage = storage ? storage.length : 0;
+                        const totalUsers = users ? users.length : 0;
+                        const totalBookings = bookings ? bookings.length : 0;
+                        const totalRevenue = Number(overview?.total_revenue || 0);
+                        const paidBookings = Number(overview?.paid_bookings || 0);
 
-                // --- RENTAL ANALYTICS ---
-                let totalRevenue = 0;
-                let completedBookings = 0;
-                let revenueByCategory = {};
-
-                bookings.forEach(b => {
-                    if (b.status === 'Completed') {
-                        completedBookings++;
-
-                        const days =
-                            Math.ceil(
-                                (new Date(b.end_date) - new Date(b.start_date)) /
-                                (1000 * 60 * 60 * 24)
-                            );
-
-                        const revenue = days * b.price_per_day * b.quantity;
-                        totalRevenue += revenue;
-
-                        if (!revenueByCategory[b.category]) {
-                            revenueByCategory[b.category] = 0;
-                        }
-                        revenueByCategory[b.category] += revenue;
-                    }
-                });
-
-                res.render("admin_dashboard", {
-                    storage: storage || [],
-                    users: users || [],
-                    bookings: bookings || [],
-                    stats: {
-                        totalStorage: storage ? storage.length : 0,
-                        totalUsers: users ? users.length : 0,
-                        totalBookings: bookings ? bookings.length : 0,
-                        completedBookings,
-                        totalRevenue,
-                        revenueByCategory
-                    }
+                        res.render("admin_dashboard", {
+                            user: req.session.user,
+                            storage: storage || [],
+                            users: users || [],
+                            bookings: bookings || [],
+                            stats: {
+                                totalStorage,
+                                totalUsers,
+                                totalBookings,
+                                paidBookings,
+                                totalRevenue
+                            }
+                        });
+                    });
                 });
             });
         });
-    });
-},
+    },
+
+    // ===== REPORTS =====
+    reports: (req, res) => {
+        Report.getOverview((errO, overview) => {
+            Report.getMonthlyRevenue((errM, monthly) => {
+                Report.getRevenueByMethod((errR, byMethod) => {
+                    Report.getTopStorage((errT, topStorage) => {
+                        res.render("admin_reports", {
+                            user: req.session.user,
+                            overview: overview || {},
+                            monthly: monthly || [],
+                            byMethod: byMethod || [],
+                            topStorage: topStorage || []
+                        });
+                    });
+                });
+            });
+        });
+    },
     // ===== STORAGE MANAGEMENT =====
     showStorageList: (req, res) => {
         Storage.getAll((err, storage) => {
-            res.render("admin_view_storage", { storage });
+            res.render("admin_view_storage", { user: req.session.user, storage });
         });
     },
 
     showAddForm: (req, res) => {
-        res.render("admin_add_storage");
+        res.render("admin_add_storage", { user: req.session.user });
     },
 
     addStorage: (req, res) => {
@@ -70,7 +72,7 @@ module.exports = {
 
     showEditForm: (req, res) => {
         Storage.findById(req.params.id, (err, results) => {
-            res.render("admin_edit_storage", { storage: results[0] });
+            res.render("admin_edit_storage", { user: req.session.user, storage: results[0] });
         });
     },
 
@@ -89,14 +91,14 @@ module.exports = {
     // ===== USER MANAGEMENT =====
     showUserList: (req, res) => {   // ✅ Correct name
         User.getAll((err, users) => {
-            res.render("admin_user_details", { users });
+            res.render("admin_user_details", { user: req.session.user, users });
         });
     },
 
     showEditUserForm: (req, res) => {
         User.findById(req.params.id, (err, results) => {
             if (results && results.length > 0) {
-                res.render("admin_edit_user", { user: results[0] });
+                res.render("admin_edit_user", { user: req.session.user, editUser: results[0] });
             } else {
                 res.redirect("/admin/users");
             }
@@ -118,14 +120,14 @@ module.exports = {
     // ===== BOOKING MANAGEMENT =====
     showBookingList: (req, res) => {
         Booking.getAll((err, bookings) => {
-            res.render("admin_bookings", { bookings });
+            res.render("admin_bookings", { user: req.session.user, bookings });
         });
     },
 
     showEditBookingForm: (req, res) => {
         Booking.findById(req.params.id, (err, results) => {
             if (results && results.length > 0) {
-                res.render("admin_edit_booking", { booking: results[0] });
+                res.render("admin_edit_booking", { user: req.session.user, booking: results[0] });
             } else {
                 res.redirect("/admin/bookings");
             }

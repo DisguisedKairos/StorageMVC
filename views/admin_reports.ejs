@@ -1,0 +1,134 @@
+<%- include("partials/header", { title: "Sales Reports" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Sales Performance Reports</h3>
+    <a href="/admin/dashboard" class="btn btn-outline-primary btn-sm">Back to Dashboard</a>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card shadow-soft text-center p-3">
+        <div class="text-muted">Total Revenue</div>
+        <div class="fs-4 fw-semibold">$<%= Number(overview.total_revenue || 0).toFixed(2) %></div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-soft text-center p-3">
+        <div class="text-muted">Total Bookings</div>
+        <div class="fs-4 fw-semibold"><%= overview.total_bookings || 0 %></div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-soft text-center p-3">
+        <div class="text-muted">Paid Bookings</div>
+        <div class="fs-4 fw-semibold"><%= overview.paid_bookings || 0 %></div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-soft text-center p-3">
+        <div class="text-muted">Total Customers</div>
+        <div class="fs-4 fw-semibold"><%= overview.total_customers || 0 %></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="card shadow-soft">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Revenue by Payment Method</h5>
+          <div class="table-responsive">
+            <table class="table table-striped mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Method</th>
+                  <th class="text-end">Payments</th>
+                  <th class="text-end">Revenue</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (!byMethod || byMethod.length === 0) { %>
+                  <tr><td colspan="3" class="text-center text-muted py-3">No data.</td></tr>
+                <% } else { %>
+                  <% byMethod.forEach(r => { %>
+                    <tr>
+                      <td><%= r.method || "N/A" %></td>
+                      <td class="text-end"><%= r.payments %></td>
+                      <td class="text-end">$<%= Number(r.revenue || 0).toFixed(2) %></td>
+                    </tr>
+                  <% }) %>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card shadow-soft">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Top Storage (Revenue)</h5>
+          <div class="table-responsive">
+            <table class="table table-striped mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Storage</th>
+                  <th class="text-end">Bookings</th>
+                  <th class="text-end">Revenue</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (!topStorage || topStorage.length === 0) { %>
+                  <tr><td colspan="3" class="text-center text-muted py-3">No data.</td></tr>
+                <% } else { %>
+                  <% topStorage.forEach(r => { %>
+                    <tr>
+                      <td><%= r.title || ("Storage #" + r.storage_id) %></td>
+                      <td class="text-end"><%= r.bookings || 0 %></td>
+                      <td class="text-end">$<%= Number(r.revenue || 0).toFixed(2) %></td>
+                    </tr>
+                  <% }) %>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="card shadow-soft">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Monthly Revenue (Last 12 Months)</h5>
+          <div class="table-responsive">
+            <table class="table table-striped mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Month</th>
+                  <th class="text-end">Revenue</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (!monthly || monthly.length === 0) { %>
+                  <tr><td colspan="2" class="text-center text-muted py-3">No data.</td></tr>
+                <% } else { %>
+                  <% monthly.forEach(r => { %>
+                    <tr>
+                      <td><%= r.month %></td>
+                      <td class="text-end">$<%= Number(r.revenue || 0).toFixed(2) %></td>
+                    </tr>
+                  <% }) %>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include("partials/footer") %>

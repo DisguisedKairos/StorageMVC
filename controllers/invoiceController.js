@@ -104,8 +104,13 @@ module.exports = {
     const userId = req.session.user.id;
     const { start_date, end_date, method, paymentMethod: paymentMethodBody } = req.body;
 
+    const dayCount = daysBetweenInclusive(start_date, end_date);
+    if (!dayCount || dayCount <= 0) {
+      return res.status(400).send("Invalid start or end date");
+    }
+
     const paymentMethod = (paymentMethodBody || method || "").trim();
-    const allowed = ["Stripe", "Cash", "PayPal", "NETSQR", "EWallet"];
+    const allowed = ["Stripe", "Cash", "PayPal", "NETSQR", "EWallet", "PayNow"];
     if (!allowed.includes(paymentMethod)) {
       return res.status(400).send("Invalid payment method");
     }
@@ -308,29 +313,44 @@ module.exports = {
           return res.status(400).json({ error: "PayPal payment was not completed" });
         }
 
-        return Invoice.createFromCart(
-          user.id,
-          pending.start_date,
-          pending.end_date,
-          "PayPal",
-          (err, data) => {
-            if (err) return res.status(400).json({ error: err.message || "Checkout failed" });
-            data.header.subtotal = Number(data.header.subtotal) || 0;
-            data.header.tax = Number(data.header.tax) || 0;
-            data.header.totalAmount = Number(data.header.totalAmount) || 0;
-            data.items = (data.items || []).map((it) => ({
-              ...it,
-              unit_price: Number(it.unit_price) || 0,
-              subtotal: Number(it.subtotal) || 0,
-              quantity: parseInt(it.quantity, 10) || 0,
-              days: parseInt(it.days, 10) || 0
-            }));
+        return computeCartTotals(user.id, pending.start_date, pending.end_date, (errT, summary) => {
+          if (errT) return res.status(400).json({ error: errT.message || "Checkout failed" });
 
-            req.session.lastInvoice = data;
-            delete req.session.pendingPayment;
-            return res.json({ ok: true, redirect: "/payment/success" });
+          const expected = Number(summary.totalAmount || 0);
+          const capturedValue = Number(
+            capture?.purchase_units?.[0]?.payments?.captures?.[0]?.amount?.value ||
+            capture?.purchase_units?.[0]?.amount?.value ||
+            0
+          );
+
+          if (Math.abs(capturedValue - expected) > 0.01) {
+            return res.status(400).json({ error: "Captured amount mismatch" });
           }
-        );
+
+          return Invoice.createFromCart(
+            user.id,
+            pending.start_date,
+            pending.end_date,
+            "PayPal",
+            (err, data) => {
+              if (err) return res.status(400).json({ error: err.message || "Checkout failed" });
+              data.header.subtotal = Number(data.header.subtotal) || 0;
+              data.header.tax = Number(data.header.tax) || 0;
+              data.header.totalAmount = Number(data.header.totalAmount) || 0;
+              data.items = (data.items || []).map((it) => ({
+                ...it,
+                unit_price: Number(it.unit_price) || 0,
+                subtotal: Number(it.subtotal) || 0,
+                quantity: parseInt(it.quantity, 10) || 0,
+                days: parseInt(it.days, 10) || 0
+              }));
+
+              req.session.lastInvoice = data;
+              delete req.session.pendingPayment;
+              return res.json({ ok: true, redirect: "/payment/success" });
+            }
+          );
+        });
       } catch (e) {
         console.error("PayPal capture-order error:", e);
         return res.status(500).json({ error: e.message || "Failed to capture PayPal order" });
@@ -362,29 +382,38 @@ module.exports = {
           return res.redirect("/payment");
         }
 
-        return Invoice.createFromCart(
-          user.id,
-          pending.start_date,
-          pending.end_date,
-          "Stripe",
-          (err, data) => {
-            if (err) return res.status(400).send(err.message || "Checkout failed");
-            data.header.subtotal = Number(data.header.subtotal) || 0;
-            data.header.tax = Number(data.header.tax) || 0;
-            data.header.totalAmount = Number(data.header.totalAmount) || 0;
-            data.items = (data.items || []).map((it) => ({
-              ...it,
-              unit_price: Number(it.unit_price) || 0,
-              subtotal: Number(it.subtotal) || 0,
-              quantity: parseInt(it.quantity, 10) || 0,
-              days: parseInt(it.days, 10) || 0
-            }));
+        return computeCartTotals(user.id, pending.start_date, pending.end_date, (errT, summary) => {
+          if (errT) return res.redirect("/payment");
 
-            req.session.lastInvoice = data;
-            delete req.session.pendingPayment;
-            return res.redirect("/payment/success");
+          const expectedCents = Math.round(Number(summary.totalAmount || 0) * 100);
+          if (session.amount_total && session.amount_total !== expectedCents) {
+            return res.redirect("/payment");
           }
-        );
+
+          return Invoice.createFromCart(
+            user.id,
+            pending.start_date,
+            pending.end_date,
+            "Stripe",
+            (err, data) => {
+              if (err) return res.status(400).send(err.message || "Checkout failed");
+              data.header.subtotal = Number(data.header.subtotal) || 0;
+              data.header.tax = Number(data.header.tax) || 0;
+              data.header.totalAmount = Number(data.header.totalAmount) || 0;
+              data.items = (data.items || []).map((it) => ({
+                ...it,
+                unit_price: Number(it.unit_price) || 0,
+                subtotal: Number(it.subtotal) || 0,
+                quantity: parseInt(it.quantity, 10) || 0,
+                days: parseInt(it.days, 10) || 0
+              }));
+
+              req.session.lastInvoice = data;
+              delete req.session.pendingPayment;
+              return res.redirect("/payment/success");
+            }
+          );
+        });
       } catch (e) {
         console.error("Stripe success error:", e);
         return res.redirect("/payment");

@@ -62,12 +62,12 @@
           <form action="/payment" method="POST" class="d-grid gap-3">
             <div>
               <label class="form-label">Start Date</label>
-              <input type="date" class="form-control" name="start_date" value="<%= startDate %>" required>
+              <input type="date" class="form-control" name="start_date" value="<%= startDate %>" min="<%= startDate %>" required>
             </div>
 
             <div>
               <label class="form-label">End Date</label>
-              <input type="date" class="form-control" name="end_date" value="<%= endDate %>" required>
+              <input type="date" class="form-control" name="end_date" value="<%= endDate %>" min="<%= startDate %>" required>
             </div>
 
             <div>
@@ -94,6 +94,14 @@
                   <div>
                     <div class="fw-semibold">NETS QR</div>
                     <small class="text-muted">Scan with your bank app</small>
+                  </div>
+                </label>
+
+                <label class="list-group-item d-flex gap-3 align-items-center">
+                  <input class="form-check-input" type="radio" name="paymentMethod" value="PayNow" <%= selectedMethod === 'PayNow' ? 'checked' : '' %>>
+                  <div>
+                    <div class="fw-semibold">PayNow</div>
+                    <small class="text-muted">Digital transfer (simulated)</small>
                   </div>
                 </label>
 
@@ -130,5 +138,18 @@
     </div>
   </div>
 </div>
+
+<script>
+  const startInput = document.querySelector('input[name="start_date"]');
+  const endInput = document.querySelector('input[name="end_date"]');
+  if (startInput && endInput) {
+    startInput.addEventListener('change', () => {
+      endInput.min = startInput.value || endInput.min;
+      if (endInput.value && endInput.value < startInput.value) {
+        endInput.value = startInput.value;
+      }
+    });
+  }
+</script>
 
 <%- include("partials/footer") %>

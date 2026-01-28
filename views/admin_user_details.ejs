@@ -1,16 +1,11 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Manage Users</title>
-    <%- include("partials/header", { title: "Edit Storage" }) %>
-    <%- include("partials/navbar", { user: user }) %>
-</head>
-<body>
-  <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h2>Manage Users</h2>
-      <a href="/storage" class="btn btn-outline-secondary">Back</a>
-    </div>
+<%- include("partials/header", { title: "Manage Users" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Manage Users</h3>
+    <a href="/admin/dashboard" class="btn btn-outline-secondary btn-sm">Back</a>
+  </div>
 
     <% if (typeof error !== 'undefined' && error.length) { %>
       <div class="alert alert-danger">
@@ -28,16 +23,13 @@
         <div class="col-md-4 mb-4">
           <div class="card h-100">
             <div class="card-body d-flex flex-column">
-              <h5 class="card-title"><%= u.name || u.Name || u.name || ('user-'+u.id) %></h5>
+              <h5 class="card-title"><%= u.name || ('user-' + u.user_id) %></h5>
               <p class="card-text text-muted"><%= u.email || '' %></p>
               <p class="card-text">Role: <strong><%= u.role || 'user' %></strong></p>
 
               <div class="mt-auto d-flex gap-2">
-                <a href="/user/<%= u.id %>" class="btn btn-sm btn-outline-primary">View / Edit</a>
-
-                
-
-                <a href="/user/<%= u.id %>/delete" onclick="return confirm('Delete user <%= (u.username||u.email) %>?')" class="btn btn-sm btn-outline-danger">Delete</a>
+                <a href="/admin/users/edit/<%= u.user_id %>" class="btn btn-sm btn-outline-primary">Edit</a>
+                <a href="/admin/users/delete/<%= u.user_id %>" onclick="return confirm('Delete user <%= (u.email || u.user_id) %>?')" class="btn btn-sm btn-outline-danger">Delete</a>
               </div>
             </div>
           </div>
@@ -45,5 +37,6 @@
       <% }); %>
     </div>
   </div>
-</body>
-</html>
+</div>
+
+<%- include("partials/footer") %>

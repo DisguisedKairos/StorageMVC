@@ -1,0 +1,38 @@
+<%- include("partials/header", { title: "Edit Booking" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Edit Booking</h3>
+    <a href="/admin/bookings" class="btn btn-outline-primary btn-sm">Back to Bookings</a>
+  </div>
+
+  <div class="card shadow-soft">
+    <div class="card-body">
+      <form action="/admin/bookings/edit/<%= booking.booking_id %>" method="POST" class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Start Date</label>
+          <input type="date" name="start_date" class="form-control" value="<%= booking.start_date ? booking.start_date.toISOString().slice(0,10) : '' %>" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">End Date</label>
+          <input type="date" name="end_date" class="form-control" value="<%= booking.end_date ? booking.end_date.toISOString().slice(0,10) : '' %>" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Status</label>
+          <select name="status" class="form-select">
+            <option value="Pending" <%= booking.status === 'Pending' ? 'selected' : '' %>>Pending</option>
+            <option value="Paid" <%= booking.status === 'Paid' ? 'selected' : '' %>>Paid</option>
+            <option value="Cancelled" <%= booking.status === 'Cancelled' ? 'selected' : '' %>>Cancelled</option>
+            <option value="Completed" <%= booking.status === 'Completed' ? 'selected' : '' %>>Completed</option>
+          </select>
+        </div>
+        <div class="col-12">
+          <button class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include("partials/footer") %>

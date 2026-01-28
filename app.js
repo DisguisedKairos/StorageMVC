@@ -168,6 +168,14 @@ app.get("/admin/dashboard", (req, res) => {
 
   adminController.dashboard(req, res);
 });
+app.get("/admin/reports", (req, res) => {
+  if (!req.session.user) return res.redirect("/login");
+  if (req.session.user.role !== "admin") {
+    return res.status(403).send("Not authorized");
+  }
+
+  adminController.reports(req, res);
+});
 
 /* ---------- ADMIN USERS ---------- */
 app.get("/admin/users", adminController.showUserList);
@@ -181,6 +189,24 @@ app.get("/admin/bookings", (req, res) => {
     return res.status(403).send("Not authorized");
   }
   adminController.showBookingList(req, res);
+});
+app.get("/admin/bookings/edit/:id", (req, res) => {
+  if (!req.session.user || req.session.user.role !== "admin") {
+    return res.status(403).send("Not authorized");
+  }
+  adminController.showEditBookingForm(req, res);
+});
+app.post("/admin/bookings/edit/:id", (req, res) => {
+  if (!req.session.user || req.session.user.role !== "admin") {
+    return res.status(403).send("Not authorized");
+  }
+  adminController.updateBooking(req, res);
+});
+app.get("/admin/bookings/delete/:id", (req, res) => {
+  if (!req.session.user || req.session.user.role !== "admin") {
+    return res.status(403).send("Not authorized");
+  }
+  adminController.deleteBooking(req, res);
 });
 app.post("/admin/payments/:id/refund", (req, res) => {
   if (!req.session.user || req.session.user.role !== "admin") {
