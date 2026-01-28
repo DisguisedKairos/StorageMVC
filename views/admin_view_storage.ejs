@@ -11,7 +11,7 @@
     <table class="table align-middle">
       <thead>
         <tr>
-          <th>Title</th><th>Size</th><th>Price/day</th><th>Status</th><th>Actions</th>
+          <th>Title</th><th>Size</th><th>Price/day</th><th>Available</th><th>Status</th><th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -20,6 +20,7 @@
             <td><%= s.title %></td>
             <td><%= s.size %></td>
             <td>$<%= s.price_per_day || s.price %></td>
+            <td><%= typeof s.available_units !== 'undefined' ? s.available_units : 'N/A' %></td>
             <td><span class="badge bg-<%= s.status === 'Rented' ? 'danger' : 'success' %>"><%= s.status %></span></td>
             <td>
               <a class="btn btn-sm btn-warning" href="/admin/storage/edit/<%= s.storage_id %>">Edit</a>

@@ -54,6 +54,50 @@ function requireCustomer(req, res) {
   if (req.session.user.role !== "customer") return res.status(403).send("Not authorized");
 }
 
+function checkStockAvailability(items, callback) {
+  if (!items || items.length === 0) return callback(null, true);
+  const db = require("../config/db");
+  const ids = [...new Set(items.map((i) => i.storage_id))];
+  db.query(
+    `SELECT storage_id, available_units FROM storage_spaces WHERE storage_id IN (?)`,
+    [ids],
+    (err, rows) => {
+      if (err) return callback(err);
+      const byId = new Map((rows || []).map((r) => [r.storage_id, Number(r.available_units ?? 0)]));
+      for (const it of items) {
+        const avail = byId.has(it.storage_id) ? byId.get(it.storage_id) : 0;
+        if (avail < it.quantity) {
+          return callback(new Error(`Insufficient stock for storage #${it.storage_id}`));
+        }
+      }
+      return callback(null, true);
+    }
+  );
+}
+
+function decrementStock(items, callback) {
+  const db = require("../config/db");
+  if (!items || items.length === 0) return callback(null, true);
+
+  const updates = items.map((it) => [it.quantity, it.storage_id]);
+  const run = (i) => {
+    if (i >= updates.length) return callback(null, true);
+    const [qty, storageId] = updates[i];
+    db.query(
+      `UPDATE storage_spaces
+       SET available_units = GREATEST(0, available_units - ?),
+           status = CASE WHEN (available_units - ?) <= 0 THEN 'Rented' ELSE 'Available' END
+       WHERE storage_id = ?`,
+      [qty, qty, storageId],
+      (err) => {
+        if (err) return callback(err);
+        return run(i + 1);
+      }
+    );
+  };
+  run(0);
+}
+
 module.exports = {
   // POST /checkout -> redirect to payment page
   checkout: (req, res) => {
@@ -119,32 +163,37 @@ module.exports = {
       return computeCartTotals(userId, start_date, end_date, (err, summary) => {
         if (err) return res.status(400).send(err.message || "Checkout failed");
 
-        const totalAmount = Number(summary.totalAmount) || 0;
-        User.getWalletBalance(userId, (errW, balance) => {
-          if (errW) return res.status(500).send("Could not load wallet balance");
-          if (balance < totalAmount) return res.status(400).send("Insufficient wallet balance");
+        checkStockAvailability(summary.items, (errStock) => {
+          if (errStock) return res.status(400).send(errStock.message || "Insufficient stock");
 
-          Invoice.createFromCart(userId, start_date, end_date, "EWallet", (errInv, data) => {
-            if (errInv) return res.status(400).send(errInv.message || "Checkout failed");
+          const totalAmount = Number(summary.totalAmount) || 0;
+          User.getWalletBalance(userId, (errW, balance) => {
+            if (errW) return res.status(500).send("Could not load wallet balance");
+            if (balance < totalAmount) return res.status(400).send("Insufficient wallet balance");
 
-            User.adjustWalletBalance(userId, -totalAmount, () => {});
+            Invoice.createFromCart(userId, start_date, end_date, "EWallet", (errInv, data) => {
+              if (errInv) return res.status(400).send(errInv.message || "Checkout failed");
 
-            data.header.subtotal = Number(data.header.subtotal) || 0;
-            data.header.tax = Number(data.header.tax) || 0;
-            data.header.totalAmount = Number(data.header.totalAmount) || 0;
-            data.items = (data.items || []).map((it) => ({
-              ...it,
-              unit_price: Number(it.unit_price) || 0,
-              subtotal: Number(it.subtotal) || 0,
-              quantity: parseInt(it.quantity, 10) || 0,
-              days: parseInt(it.days, 10) || 0
-            }));
+              decrementStock(summary.items, () => {});
+              User.adjustWalletBalance(userId, -totalAmount, () => {});
 
-            return res.render("invoice", {
-              user: req.session.user,
-              header: data.header,
-              items: data.items,
-              paymentMethod: "EWallet"
+              data.header.subtotal = Number(data.header.subtotal) || 0;
+              data.header.tax = Number(data.header.tax) || 0;
+              data.header.totalAmount = Number(data.header.totalAmount) || 0;
+              data.items = (data.items || []).map((it) => ({
+                ...it,
+                unit_price: Number(it.unit_price) || 0,
+                subtotal: Number(it.subtotal) || 0,
+                quantity: parseInt(it.quantity, 10) || 0,
+                days: parseInt(it.days, 10) || 0
+              }));
+
+              return res.render("invoice", {
+                user: req.session.user,
+                header: data.header,
+                items: data.items,
+                paymentMethod: "EWallet"
+              });
             });
           });
         });
@@ -163,71 +212,83 @@ module.exports = {
 
       return computeCartTotals(userId, start_date, end_date, async (err, summary) => {
         if (err) return res.status(400).send(err.message || "Checkout failed");
+        checkStockAvailability(summary.items, (errStock) => {
+          if (errStock) return res.status(400).send(errStock.message || "Insufficient stock");
 
-        if (paymentMethod === "PayPal") {
-          return res.render("paypal_checkout", {
-            user: req.session.user,
-            totalAmount: Number(summary.totalAmount) || 0,
-            paypalClientId: process.env.PAYPAL_CLIENT_ID || ""
-          });
-        }
-
-        if (paymentMethod === "Stripe") {
-          try {
-            const stripe = require("../services/stripe");
-            const amount = Number(summary.totalAmount) || 0;
-            const session = await stripe.createCheckoutSession({
-              amount,
-              reference: `STORAGE-${Date.now()}`,
-              userId
+          if (paymentMethod === "PayPal") {
+            return res.render("paypal_checkout", {
+              user: req.session.user,
+              totalAmount: Number(summary.totalAmount) || 0,
+              paypalClientId: process.env.PAYPAL_CLIENT_ID || ""
             });
-
-            if (!session || !session.id || !session.url) {
-              return res.status(400).send("Stripe did not return a valid checkout session");
-            }
-
-            req.session.pendingPayment.stripeSessionId = session.id;
-            return res.redirect(session.url);
-          } catch (e) {
-            console.error("Stripe init error:", e);
-            return res.status(400).send(e.message || "Could not start Stripe payment");
           }
-        }
 
-        try {
-          const nets = require("../services/nets");
-          const amount = Number(summary.totalAmount) || 0;
-          req.body.cartTotal = amount.toFixed(2);
-          return nets.generateQrCode(req, res);
-        } catch (e) {
-          console.error("NETS QR init error:", e);
-          return res.status(400).send(e.message || "Could not start NETS QR payment");
-        }
+          if (paymentMethod === "Stripe") {
+            try {
+              const stripe = require("../services/stripe");
+              const amount = Number(summary.totalAmount) || 0;
+              const session = await stripe.createCheckoutSession({
+                amount,
+                reference: `STORAGE-${Date.now()}`,
+                userId
+              });
+
+              if (!session || !session.id || !session.url) {
+                return res.status(400).send("Stripe did not return a valid checkout session");
+              }
+
+              req.session.pendingPayment.stripeSessionId = session.id;
+              return res.redirect(session.url);
+            } catch (e) {
+              console.error("Stripe init error:", e);
+              return res.status(400).send(e.message || "Could not start Stripe payment");
+            }
+          }
+
+          try {
+            const nets = require("../services/nets");
+            const amount = Number(summary.totalAmount) || 0;
+            req.body.cartTotal = amount.toFixed(2);
+            return nets.generateQrCode(req, res);
+          } catch (e) {
+            console.error("NETS QR init error:", e);
+            return res.status(400).send(e.message || "Could not start NETS QR payment");
+          }
+        });
       });
     }
 
-    Invoice.createFromCart(userId, start_date, end_date, paymentMethod, (err, data) => {
-      if (err) {
-        // keep it simple to match your current UI (no flash)
-        return res.status(400).send(err.message || "Checkout failed");
-      }
+    computeCartTotals(userId, start_date, end_date, (errSum, summary) => {
+      if (errSum) return res.status(400).send(errSum.message || "Checkout failed");
+      checkStockAvailability(summary.items, (errStock) => {
+        if (errStock) return res.status(400).send(errStock.message || "Insufficient stock");
 
-      // ensure numbers for toFixed in EJS
-      data.header.subtotal = Number(data.header.subtotal) || 0;
-      data.header.tax = Number(data.header.tax) || 0;
-      data.header.totalAmount = Number(data.header.totalAmount) || 0;
-      data.items = (data.items || []).map((it) => ({
-        ...it,
-        unit_price: Number(it.unit_price) || 0,
-        subtotal: Number(it.subtotal) || 0,
-        quantity: parseInt(it.quantity, 10) || 0,
-        days: parseInt(it.days, 10) || 0
-      }));
+        Invoice.createFromCart(userId, start_date, end_date, paymentMethod, (err, data) => {
+        if (err) {
+          // keep it simple to match your current UI (no flash)
+          return res.status(400).send(err.message || "Checkout failed");
+        }
 
-      res.render("invoice", {
-        user: req.session.user,
-        header: data.header,
-        items: data.items
+        decrementStock(summary.items, () => {});
+
+        // ensure numbers for toFixed in EJS
+        data.header.subtotal = Number(data.header.subtotal) || 0;
+        data.header.tax = Number(data.header.tax) || 0;
+        data.header.totalAmount = Number(data.header.totalAmount) || 0;
+        data.items = (data.items || []).map((it) => ({
+          ...it,
+          unit_price: Number(it.unit_price) || 0,
+          subtotal: Number(it.subtotal) || 0,
+          quantity: parseInt(it.quantity, 10) || 0,
+          days: parseInt(it.days, 10) || 0
+        }));
+
+        res.render("invoice", {
+          user: req.session.user,
+          header: data.header,
+          items: data.items
+        });
+        });
       });
     });
   },
@@ -316,6 +377,9 @@ module.exports = {
         return computeCartTotals(user.id, pending.start_date, pending.end_date, (errT, summary) => {
           if (errT) return res.status(400).json({ error: errT.message || "Checkout failed" });
 
+          checkStockAvailability(summary.items, (errStock) => {
+            if (errStock) return res.status(400).json({ error: errStock.message || "Insufficient stock" });
+
           const expected = Number(summary.totalAmount || 0);
           const capturedValue = Number(
             capture?.purchase_units?.[0]?.payments?.captures?.[0]?.amount?.value ||
@@ -347,9 +411,11 @@ module.exports = {
 
               req.session.lastInvoice = data;
               delete req.session.pendingPayment;
+              decrementStock(summary.items, () => {});
               return res.json({ ok: true, redirect: "/payment/success" });
             }
           );
+          });
         });
       } catch (e) {
         console.error("PayPal capture-order error:", e);
@@ -385,6 +451,9 @@ module.exports = {
         return computeCartTotals(user.id, pending.start_date, pending.end_date, (errT, summary) => {
           if (errT) return res.redirect("/payment");
 
+          checkStockAvailability(summary.items, (errStock) => {
+            if (errStock) return res.redirect("/payment");
+
           const expectedCents = Math.round(Number(summary.totalAmount || 0) * 100);
           if (session.amount_total && session.amount_total !== expectedCents) {
             return res.redirect("/payment");
@@ -410,9 +479,11 @@ module.exports = {
 
               req.session.lastInvoice = data;
               delete req.session.pendingPayment;
+              decrementStock(summary.items, () => {});
               return res.redirect("/payment/success");
             }
           );
+          });
         });
       } catch (e) {
         console.error("Stripe success error:", e);
@@ -575,6 +646,9 @@ module.exports = {
         if (err) return res.status(400).json({ ok: false, error: err.message || "checkout_failed" });
         req.session.lastInvoice = data;
         delete req.session.pendingPayment;
+        computeCartTotals(user.id, pending.start_date, pending.end_date, (errSum, summary) => {
+          if (!errSum) decrementStock(summary.items, () => {});
+        });
         return res.json({ ok: true });
       }
     );

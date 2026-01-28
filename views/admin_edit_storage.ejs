@@ -16,11 +16,24 @@
         <div class="col-md-3"><label class="form-label">Price/day</label>
           <input required name="price_per_day" value="<%= storage.price_per_day || storage.price %>" type="number" step="0.01" class="form-control"></div>
 
+        <div class="col-md-3"><label class="form-label">Total Units</label>
+          <input required name="total_units" value="<%= storage.total_units || 1 %>" type="number" min="1" class="form-control"></div>
+
+        <div class="col-md-3"><label class="form-label">Available Units</label>
+          <input required name="available_units" value="<%= storage.available_units || 0 %>" type="number" min="0" class="form-control"></div>
+
         <div class="col-12"><label class="form-label">Location</label>
           <input name="location" value="<%= storage.location %>" class="form-control"></div>
 
         <div class="col-12"><label class="form-label">Description</label>
           <textarea name="description" class="form-control" rows="4"><%= storage.description %></textarea></div>
+
+        <div class="col-md-4"><label class="form-label">Status</label>
+          <select name="status" class="form-select">
+            <option value="Available" <%= storage.status === 'Available' ? 'selected' : '' %>>Available</option>
+            <option value="Rented" <%= storage.status === 'Rented' ? 'selected' : '' %>>Rented</option>
+          </select>
+        </div>
 
         <div class="col-12 d-grid">
           <button class="btn btn-warning">Save Changes</button>
