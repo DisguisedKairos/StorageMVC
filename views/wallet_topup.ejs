@@ -1,0 +1,146 @@
+<%- include("partials/header", { title: "Top-up E-Wallet" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Top-up E-Wallet</h3>
+    <a href="/wallet" class="btn btn-outline-primary btn-sm">Back to Wallet</a>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card shadow-soft">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Wallet Information</h5>
+
+          <div class="alert alert-info">
+            <div class="fw-semibold">Current Balance</div>
+            <div style="font-size: 2rem; font-weight: bold; margin: 0.5rem 0;">
+              SGD $<%= Number(balance).toFixed(2) %>
+            </div>
+            <small>Available for immediate use</small>
+          </div>
+
+          <h6 class="mt-4 mb-3">About E-Wallet</h6>
+          <ul class="small text-muted">
+            <li>💰 Instant payments for storage bookings</li>
+            <li>🔒 Secure and encrypted transactions</li>
+            <li>📱 Multiple payment methods supported</li>
+            <li>📋 Complete transaction history tracking</li>
+            <li>♻️ Unused balance persists for future bookings</li>
+          </ul>
+
+          <div class="alert alert-warning mt-4" style="font-size: 0.95rem;">
+            <strong>Min Top-up:</strong> SGD $1 | <strong>Max:</strong> SGD $100,000
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card shadow-soft">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Top-up Amount & Method</h5>
+
+          <form action="/wallet/topup" method="POST" class="d-grid gap-3" id="topupForm">
+            <!-- Amount Selection -->
+            <div>
+              <label class="form-label fw-semibold">Top-up Amount</label>
+              <div class="mb-2">
+                <% [10, 25, 50, 100].forEach(amt => { %>
+                  <button type="button" class="btn btn-sm btn-outline-primary me-2 mb-2" onclick="setAmount(<%= amt %>)">
+                    SGD $<%= amt %>
+                  </button>
+                <% }); %>
+              </div>
+              <input 
+                type="number" 
+                class="form-control form-control-lg" 
+                name="amount" 
+                id="topupAmount"
+                placeholder="Enter custom amount"
+                step="0.01"
+                min="1"
+                max="100000"
+                required
+              >
+            </div>
+
+            <!-- Payment Method -->
+            <div>
+              <label class="form-label fw-semibold">Payment Method</label>
+              <div class="list-group">
+                <label class="list-group-item d-flex gap-3 align-items-center">
+                  <input class="form-check-input" type="radio" name="paymentMethod" value="Stripe" required>
+                  <div>
+                    <div class="fw-semibold">Stripe</div>
+                    <small class="text-muted">Card payment via Stripe</small>
+                  </div>
+                </label>
+
+                <label class="list-group-item d-flex gap-3 align-items-center">
+                  <input class="form-check-input" type="radio" name="paymentMethod" value="PayPal">
+                  <div>
+                    <div class="fw-semibold">PayPal (Sandbox)</div>
+                    <small class="text-muted">Pay with PayPal button</small>
+                  </div>
+                </label>
+
+                <label class="list-group-item d-flex gap-3 align-items-center">
+                  <input class="form-check-input" type="radio" name="paymentMethod" value="NETSQR">
+                  <div>
+                    <div class="fw-semibold">NETS QR</div>
+                    <small class="text-muted">Scan with your bank app</small>
+                  </div>
+                </label>
+
+                <label class="list-group-item d-flex gap-3 align-items-center">
+                  <input class="form-check-input" type="radio" name="paymentMethod" value="PayNow">
+                  <div>
+                    <div class="fw-semibold">PayNow</div>
+                    <small class="text-muted">Digital transfer (simulated)</small>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg">Proceed to Payment</button>
+          </form>
+
+          <div class="small text-muted mt-3">
+            All transactions are secure and encrypted with SSL.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const amountInput = document.getElementById('topupAmount');
+  const form = document.getElementById('topupForm');
+
+  function setAmount(amt) {
+    amountInput.value = amt;
+    amountInput.focus();
+  }
+
+  form.addEventListener('submit', function(e) {
+    const amount = parseFloat(amountInput.value);
+    const method = document.querySelector('input[name="paymentMethod"]:checked');
+
+    if (!method) {
+      e.preventDefault();
+      alert('Please select a payment method');
+      return;
+    }
+
+    if (!amount || amount < 1 || amount > 100000) {
+      e.preventDefault();
+      alert('Please enter a valid amount between SGD $1 and $100,000');
+      return;
+    }
+  });
+</script>
+
+<%- include("partials/footer") %>

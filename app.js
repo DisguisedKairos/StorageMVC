@@ -50,10 +50,17 @@ const storageController = require("./controllers/storageController");
 const customerController = require("./controllers/customerController");
 const cartController = require("./controllers/cartController");
 const invoiceController = require("./controllers/invoiceController");
+const walletController = require("./controllers/walletController");
 
 /* ======================
    ROUTES
 ====================== */
+
+// Initialize wallet tables on startup
+const WalletTransaction = require("./models/WalletTransaction");
+WalletTransaction.initializeTables(() => {
+  console.log("Wallet tables initialized ✅");
+});
 
 // HOME / LOGIN REDIRECT
 app.get("/", (req, res) => {
@@ -99,6 +106,18 @@ app.post("/api/paypal/capture-order", invoiceController.paypalApiCaptureOrder);
 app.get("/stripe/success", invoiceController.stripeSuccess);
 app.get("/stripe/cancel", invoiceController.stripeCancel);
 app.get("/history", invoiceController.history);
+
+/* ---------- WALLET ---------- */
+app.get("/wallet", walletController.dashboard);
+app.get("/wallet/topup", walletController.showTopupForm);
+app.post("/wallet/topup", walletController.processTopup);
+app.get("/wallet/history", walletController.history);
+app.post("/api/wallet/paypal/create-order", walletController.paypalApiCreateTopupOrder);
+app.post("/api/wallet/paypal/capture-order", walletController.paypalApiCaptureTopupOrder);
+app.get("/wallet/stripe-success", walletController.stripeTopupSuccess);
+app.get("/wallet/stripe-cancel", walletController.stripeTopupCancel);
+app.post("/wallet/paynow/finalize", walletController.payNowTopupFinalize);
+app.post("/wallet/netsqr/finalize", walletController.netsQrTopupFinalize);
 
 /* ---------- NETS QR ---------- */
 app.get("/sse/payment-status/:txnRetrievalRef", invoiceController.netsSsePaymentStatus);

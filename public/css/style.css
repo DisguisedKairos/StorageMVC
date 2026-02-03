@@ -63,6 +63,24 @@ body.bg-light {
   color: #ffffff;
 }
 
+/* Dropdown menu fixes */
+.dropdown-menu {
+  z-index: 1050 !important;
+  border: 1px solid var(--cs-border);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.dropdown-menu .dropdown-item {
+  color: var(--cs-text-main);
+  padding: 0.65rem 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.dropdown-menu .dropdown-item:hover {
+  background-color: var(--cs-green-light);
+  color: var(--cs-green-dark);
+}
+
 /* Cart badge styling (top-right bubble) */
 .navbar .badge {
   background-color: var(--cs-yellow) !important;

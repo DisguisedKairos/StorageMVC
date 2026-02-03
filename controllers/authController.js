@@ -28,13 +28,28 @@ module.exports = {
                 id: user.user_id,
                 name: user.name,
                 email: user.email,
-                role: user.role
+                role: user.role,
+                walletBalance: 0
             };
 
-            if (user.role === "admin") {
-                res.redirect("/admin/dashboard");
+            // Load wallet balance for customers
+            if (user.role === "customer") {
+                User.getWalletBalance(user.user_id, (errBalance, balance) => {
+                    req.session.user.walletBalance = balance || 0;
+                    req.session.user.wallet_balance = balance || 0;
+                    
+                    if (user.role === "admin") {
+                        return res.redirect("/admin/dashboard");
+                    } else {
+                        return res.redirect("/customer/dashboard");
+                    }
+                });
             } else {
-                res.redirect("/customer/dashboard");
+                if (user.role === "admin") {
+                    res.redirect("/admin/dashboard");
+                } else {
+                    res.redirect("/customer/dashboard");
+                }
             }
         });
     },
