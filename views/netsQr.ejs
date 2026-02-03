@@ -245,17 +245,32 @@
 
             if (responseCode === "00" && Number(txnStatus) === 1) {
                 if (s2sNetsTxnStatus) s2sNetsTxnStatus.close();
-                fetch("/netsqr/finalize", { method: "POST", credentials: "same-origin" })
+                
+                const finalizeUrl = "<%= isWalletTopup ? '/wallet/netsqr/finalize' : '/netsqr/finalize' %>";
+                
+                fetch(finalizeUrl, { method: "POST", credentials: "same-origin" })
                     .then((r) => r.json())
                     .then((r) => {
                         if (r && r.ok) {
-                            window.location.href = `/nets-qr/success?txn_retrieval_ref=${txnRetrievalRef}`;
+                            <% if (isWalletTopup) { %>
+                                window.location.href = `/wallet?message=Top-up+successful`;
+                            <% } else { %>
+                                window.location.href = `/nets-qr/success?txn_retrieval_ref=${txnRetrievalRef}`;
+                            <% } %>
                         } else {
-                            window.location.href = `/nets-qr/success?txn_retrieval_ref=${txnRetrievalRef}`;
+                            <% if (isWalletTopup) { %>
+                                window.location.href = `/wallet?error=Top-up+failed`;
+                            <% } else { %>
+                                window.location.href = `/nets-qr/success?txn_retrieval_ref=${txnRetrievalRef}`;
+                            <% } %>
                         }
                     })
                     .catch(() => {
-                        window.location.href = `/nets-qr/success?txn_retrieval_ref=${txnRetrievalRef}`;
+                        <% if (isWalletTopup) { %>
+                            window.location.href = `/wallet?error=Top-up+failed`;
+                        <% } else { %>
+                            window.location.href = `/nets-qr/success?txn_retrieval_ref=${txnRetrievalRef}`;
+                        <% } %>
                     });
                 return;
             }

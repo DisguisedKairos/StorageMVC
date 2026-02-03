@@ -1,6 +1,10 @@
 <nav class="navbar navbar-expand-lg" style="background:#1e293b;">
   <div class="container container-max">
+<<<<<<< HEAD
     <a class="navbar-brand nav-brand" href="/" style="color: #ffffff !important; font-weight: 700; font-size: 24px; letter-spacing: 1px;">KeepIT</a>
+=======
+    <a class="navbar-brand nav-brand text-white" href="/">StorageHub</a>
+>>>>>>> 1710e5c0a86c273c8d08c1d7bb4589d1a5c5d062
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
       <span class="navbar-toggler-icon"></span>
@@ -21,8 +25,13 @@
             <a class="nav-link text-white" href="/history">History</a>
           </li>
           <li class="nav-item">
+            <a class="nav-link text-white fw-semibold" href="/wallet">
+              💳 E-Wallet
+            </a>
+          </li>
+          <li class="nav-item">
             <span class="nav-link text-white">
-              E-Wallet: $<%= Number(user.walletBalance || user.wallet_balance || 0).toFixed(2) %>
+              Balance: $<%= Number(user.walletBalance || user.wallet_balance || 0).toFixed(2) %>
             </span>
           </li>
         <% } %>

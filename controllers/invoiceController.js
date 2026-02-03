@@ -54,23 +54,46 @@ function requireCustomer(req, res) {
   if (req.session.user.role !== "customer") return res.status(403).send("Not authorized");
 }
 
-function checkStockAvailability(items, callback) {
+function checkStockAvailability(items, startDate, endDate, callback) {
   if (!items || items.length === 0) return callback(null, true);
   const db = require("../config/db");
+  if (!startDate || !endDate) return callback(new Error("Invalid dates"));
+  
   const ids = [...new Set(items.map((i) => i.storage_id))];
+  if (ids.length === 0) return callback(null, true);
+  
+  // Check for overlapping bookings during requested date range
   db.query(
-    `SELECT storage_id, available_units FROM storage_spaces WHERE storage_id IN (?)`,
-    [ids],
-    (err, rows) => {
+    `SELECT storage_id, COUNT(*) as overlap_count FROM bookings 
+     WHERE storage_id IN (?) 
+     AND status IN ('confirmed', 'active') 
+     AND start_date <= ? AND end_date >= ?
+     GROUP BY storage_id`,
+    [ids, endDate, startDate],
+    (err, overlaps) => {
       if (err) return callback(err);
-      const byId = new Map((rows || []).map((r) => [r.storage_id, Number(r.available_units ?? 0)]));
-      for (const it of items) {
-        const avail = byId.has(it.storage_id) ? byId.get(it.storage_id) : 0;
-        if (avail < it.quantity) {
-          return callback(new Error(`Insufficient stock for storage #${it.storage_id}`));
+      
+      const overlapMap = new Map((overlaps || []).map((o) => [o.storage_id, Number(o.overlap_count)]));
+      
+      db.query(
+        `SELECT storage_id, total_units FROM storage_spaces WHERE storage_id IN (?)`,
+        [ids],
+        (errUnits, units) => {
+          if (errUnits) return callback(errUnits);
+          const unitsMap = new Map((units || []).map((u) => [u.storage_id, Number(u.total_units ?? 1)]));
+          
+          for (const it of items) {
+            const totalSlots = unitsMap.has(it.storage_id) ? unitsMap.get(it.storage_id) : 1;
+            const activeBookings = overlapMap.has(it.storage_id) ? overlapMap.get(it.storage_id) : 0;
+            const availableSlots = totalSlots - activeBookings;
+            
+            if (availableSlots < it.quantity) {
+              return callback(new Error(`Insufficient availability for storage #${it.storage_id} (need ${it.quantity}, available ${availableSlots})`));
+            }
+          }
+          return callback(null, true);
         }
-      }
-      return callback(null, true);
+      );
     }
   );
 }
@@ -163,7 +186,11 @@ module.exports = {
       return computeCartTotals(userId, start_date, end_date, (err, summary) => {
         if (err) return res.status(400).send(err.message || "Checkout failed");
 
+<<<<<<< HEAD
         checkStockAvailability(summary.items, async (errStock) => {
+=======
+        checkStockAvailability(summary.items, start_date, end_date, (errStock) => {
+>>>>>>> 1710e5c0a86c273c8d08c1d7bb4589d1a5c5d062
           if (errStock) return res.status(400).send(errStock.message || "Insufficient stock");
 
           const totalAmount = Number(summary.totalAmount) || 0;
@@ -212,7 +239,11 @@ module.exports = {
 
       return computeCartTotals(userId, start_date, end_date, async (err, summary) => {
         if (err) return res.status(400).send(err.message || "Checkout failed");
+<<<<<<< HEAD
         checkStockAvailability(summary.items, async (errStock) => {
+=======
+        checkStockAvailability(summary.items, start_date, end_date, async (errStock) => {
+>>>>>>> 1710e5c0a86c273c8d08c1d7bb4589d1a5c5d062
           if (errStock) return res.status(400).send(errStock.message || "Insufficient stock");
 
           if (paymentMethod === "PayPal") {
@@ -260,7 +291,7 @@ module.exports = {
 
     computeCartTotals(userId, start_date, end_date, (errSum, summary) => {
       if (errSum) return res.status(400).send(errSum.message || "Checkout failed");
-      checkStockAvailability(summary.items, (errStock) => {
+      checkStockAvailability(summary.items, start_date, end_date, (errStock) => {
         if (errStock) return res.status(400).send(errStock.message || "Insufficient stock");
 
         Invoice.createFromCart(userId, start_date, end_date, paymentMethod, (err, data) => {
@@ -377,7 +408,7 @@ module.exports = {
         return computeCartTotals(user.id, pending.start_date, pending.end_date, (errT, summary) => {
           if (errT) return res.status(400).json({ error: errT.message || "Checkout failed" });
 
-          checkStockAvailability(summary.items, (errStock) => {
+          checkStockAvailability(summary.items, pending.start_date, pending.end_date, (errStock) => {
             if (errStock) return res.status(400).json({ error: errStock.message || "Insufficient stock" });
 
           const expected = Number(summary.totalAmount || 0);
@@ -451,7 +482,7 @@ module.exports = {
         return computeCartTotals(user.id, pending.start_date, pending.end_date, (errT, summary) => {
           if (errT) return res.redirect("/payment");
 
-          checkStockAvailability(summary.items, (errStock) => {
+          checkStockAvailability(summary.items, pending.start_date, pending.end_date, (errStock) => {
             if (errStock) return res.redirect("/payment");
 
           const expectedCents = Math.round(Number(summary.totalAmount || 0) * 100);
