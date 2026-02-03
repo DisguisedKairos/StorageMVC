@@ -1,17 +1,13 @@
 <nav class="navbar navbar-expand-lg" style="background:#1e293b;">
   <div class="container container-max">
-<<<<<<< HEAD
     <a class="navbar-brand nav-brand" href="/" style="color: #ffffff !important; font-weight: 700; font-size: 24px; letter-spacing: 1px;">KeepIT</a>
-=======
-    <a class="navbar-brand nav-brand text-white" href="/">StorageHub</a>
->>>>>>> 1710e5c0a86c273c8d08c1d7bb4589d1a5c5d062
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
       <span class="navbar-toggler-icon"></span>
     </button>
 
     <div class="collapse navbar-collapse" id="navMenu">
-      <ul class="navbar-nav ms-auto align-items-center">
+      <ul class="navbar-nav ms-auto align-items-center gap-2">
 
         <li class="nav-item">
           <a class="nav-link text-white" href="/storage">Browse</a>
@@ -25,87 +21,49 @@
             <a class="nav-link text-white" href="/history">History</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link text-white fw-semibold" href="/wallet">
-              💳 E-Wallet
-            </a>
+            <a class="nav-link text-white" href="/wallet">💳 Wallet</a>
           </li>
           <li class="nav-item">
-            <span class="nav-link text-white">
-              Balance: $<%= Number(user.walletBalance || user.wallet_balance || 0).toFixed(2) %>
+            <span class="nav-link text-white-50" style="font-size: 14px;">
+              Balance: <strong class="text-white">${<%= Number(user.walletBalance || user.wallet_balance || 0).toFixed(2) %></strong>
             </span>
           </li>
         <% } %>
 
         <% if (user && user.role === 'admin') { %>
-          <!-- ADMIN DASHBOARD -->
           <li class="nav-item">
-            <a class="nav-link text-white fw-semibold" href="/admin/dashboard">
-              Dashboard
-            </a>
-          </li>
-
-          <!-- MANAGE USERS -->
-          <li class="nav-item">
-            <a class="nav-link text-white" href="/admin/users">
-              Manage Users
-            </a>
+            <a class="nav-link text-white" href="/admin/dashboard">Dashboard</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link text-white" href="/admin/reports">
-              Reports
-            </a>
+            <a class="nav-link text-white" href="/admin/users">Users</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-white" href="/admin/reports">Reports</a>
           </li>
         <% } %>
 
         <% if (user) { %>
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle text-white" href="#" id="userMenu" role="button" data-bs-toggle="dropdown">
+            <a class="nav-link dropdown-toggle text-white fw-semibold" href="#" id="userMenu" role="button" data-bs-toggle="dropdown" style="cursor: pointer;">
               <%= user.name %>
             </a>
 
             <ul class="dropdown-menu dropdown-menu-end">
               <% if (user.role === 'admin') { %>
-                <li>
-                  <a class="dropdown-item" href="/admin/dashboard">
-                    Admin Dashboard
-                  </a>
-                </li>
-                <li>
-                  <a class="dropdown-item" href="/admin/storage">
-                    Manage Storage
-                  </a>
-                </li>
-                <li>
-                  <a class="dropdown-item" href="/admin/reports">
-                    Sales Reports
-                  </a>
-                </li>
+                <li><a class="dropdown-item" href="/admin/dashboard">Admin Dashboard</a></li>
+                <li><a class="dropdown-item" href="/admin/storage">Manage Storage</a></li>
+                <li><a class="dropdown-item" href="/admin/reports">Sales Reports</a></li>
               <% } else { %>
-                <li>
-                  <a class="dropdown-item" href="/customer/dashboard">
-                    Dashboard
-                  </a>
-                </li>
-                <li>
-                  <a class="dropdown-item" href="/cart">
-                    My Cart
-                  </a>
-                </li>
+                <li><a class="dropdown-item" href="/customer/dashboard">Dashboard</a></li>
+                <li><a class="dropdown-item" href="/cart">My Cart</a></li>
               <% } %>
-
               <li><hr class="dropdown-divider"></li>
-              <li>
-                <a class="dropdown-item text-danger" href="/logout">
-                  Logout
-                </a>
-              </li>
+              <li><a class="dropdown-item text-danger" href="/logout">Logout</a></li>
             </ul>
           </li>
         <% } else { %>
           <li class="nav-item">
-            <a class="btn btn-light btn-sm ms-2" href="/login">
-              Login
-            </a>
+            <a class="btn btn-light btn-sm" href="/login" style="border-radius: 20px; padding: 8px 24px;">Login</a>
           </li>
         <% } %>
 

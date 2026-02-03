@@ -186,11 +186,7 @@ module.exports = {
       return computeCartTotals(userId, start_date, end_date, (err, summary) => {
         if (err) return res.status(400).send(err.message || "Checkout failed");
 
-<<<<<<< HEAD
         checkStockAvailability(summary.items, async (errStock) => {
-=======
-        checkStockAvailability(summary.items, start_date, end_date, (errStock) => {
->>>>>>> 1710e5c0a86c273c8d08c1d7bb4589d1a5c5d062
           if (errStock) return res.status(400).send(errStock.message || "Insufficient stock");
 
           const totalAmount = Number(summary.totalAmount) || 0;
@@ -239,11 +235,7 @@ module.exports = {
 
       return computeCartTotals(userId, start_date, end_date, async (err, summary) => {
         if (err) return res.status(400).send(err.message || "Checkout failed");
-<<<<<<< HEAD
         checkStockAvailability(summary.items, async (errStock) => {
-=======
-        checkStockAvailability(summary.items, start_date, end_date, async (errStock) => {
->>>>>>> 1710e5c0a86c273c8d08c1d7bb4589d1a5c5d062
           if (errStock) return res.status(400).send(errStock.message || "Insufficient stock");
 
           if (paymentMethod === "PayPal") {

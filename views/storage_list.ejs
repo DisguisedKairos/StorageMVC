@@ -3,7 +3,7 @@
 
 <style>
   body {
-    background: #e8e8e3;
+    background: #9b9b9b;
   }
 
   .hero-section {
@@ -13,7 +13,7 @@
     gap: 60px;
     padding: 80px 0;
     flex-wrap: wrap;
-    background: linear-gradient(135deg, #f5f7fa 0%, #e8eef5 100%);
+    background: #f5f5f5;
   }
 
   .hero-left {
@@ -124,7 +124,7 @@
   .storage-section {
     margin-top: 60px;
     padding: 60px 20px;
-    background: #e8e8e3;
+    background: #f5f5f5;
   }
 
   .storage-header {
@@ -268,22 +268,7 @@
     overflow: hidden;
     box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
     transition: all 0.3s;
-  }
-
-  .location-card:nth-child(1) .location-blob {
-    border-radius: 55% 45% 48% 52% / 60% 50% 50% 40%;
-  }
-
-  .location-card:nth-child(2) .location-blob {
-    border-radius: 45% 55% 52% 48% / 50% 60% 40% 50%;
-  }
-
-  .location-card:nth-child(3) .location-blob {
-    border-radius: 50% 50% 45% 55% / 55% 45% 55% 45%;
-  }
-
-  .location-card:nth-child(4) .location-blob {
-    border-radius: 48% 52% 55% 45% / 60% 40% 60% 40%;
+    border-radius: 50%;
   }
 
   .location-card:hover .location-blob {
@@ -384,7 +369,7 @@
       <h2>Features</h2>
       <p>Our team is composed of experienced storage professionals ready to assist you.</p>
       <p><strong>We offer a variety of storage options,</strong> including climate-controlled units, to suit your needs.</p>
-      <a href="#storage-grid" class="discover-btn">Discover more</a>
+      <a href="#locations-section" class="discover-btn" onclick="document.getElementById('locations-section').scrollIntoView({behavior: 'smooth'}); return false;">Discover more</a>
     </div>
     <div class="decorative-line"></div>
     <div class="decorative-dots dot-1"></div>
@@ -393,7 +378,7 @@
   </div>
 
   <!-- Locations Section -->
-  <div class="storage-section">
+  <div class="storage-section" id="locations-section">
     <div class="storage-header">
       <h3>Browse by Location</h3>
       <p>Select your preferred area</p>
