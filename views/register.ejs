@@ -1,43 +1,263 @@
 <%- include("partials/header", { title: "Register" }) %>
-<%- include("partials/navbar", { user: user }) %>
 
-<div class="d-flex align-items-center justify-content-center" style="min-height:75vh;">
-  <div class="card shadow-soft p-4" style="width:480px;">
-    <h4 class="mb-1">Create your account</h4>
-    <p class="small-muted mb-3">Join StorageHub — list or rent storage easily</p>
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow-x: hidden;
+    background: url('/images/log-inBG.png') no-repeat center center fixed;
+    background-size: cover;
+  }
+  
+  .auth-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-height: 100vh;
+    width: 100%;
+    padding-right: 80px;
+    position: relative;
+  }
+  
+  .logo-section {
+    position: absolute;
+    top: 40px;
+    left: 40px;
+    z-index: 10;
+  }
+  
+  .logo-section h2 {
+    color: #ffffff;
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0;
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+  }
+  
+  .auth-card {
+    background: rgba(30, 35, 45, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 24px;
+    padding: 50px 45px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(100, 255, 100, 0.3);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    position: relative;
+  }
+  
+  .auth-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 24px;
+    padding: 2px;
+    background: linear-gradient(135deg, rgba(100, 255, 100, 0.4), rgba(255, 200, 50, 0.4));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+  
+  .auth-card h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 8px;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  
+  .auth-card .subtitle {
+    color: #a0a0a0;
+    font-size: 13px;
+    margin-bottom: 30px;
+    text-align: center;
+  }
+  
+  .input-group-custom {
+    margin-bottom: 18px;
+  }
+  
+  .input-group-custom label {
+    display: block;
+    font-size: 13px;
+    color: #c0c0c0;
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+  
+  .input-with-icon {
+    position: relative;
+  }
+  
+  .input-with-icon i {
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #808080;
+    font-size: 16px;
+  }
+  
+  .input-with-icon input,
+  .input-with-icon select {
+    width: 100%;
+    padding: 15px 20px 15px 48px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 25px;
+    font-size: 14px;
+    transition: all 0.3s;
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+  }
+  
+  .input-with-icon input::placeholder,
+  .input-with-icon select option {
+    color: #808080;
+  }
+  
+  .input-with-icon select {
+    appearance: none;
+    cursor: pointer;
+  }
+  
+  .input-with-icon input:focus,
+  .input-with-icon select:focus {
+    outline: none;
+    border-color: rgba(180, 255, 100, 0.6);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 3px rgba(180, 255, 100, 0.1);
+  }
+  
+  .row-custom {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+  }
+  
+  .btn-register {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(90deg, #ffcc00 0%, #b8ff33 100%);
+    border: none;
+    border-radius: 25px;
+    color: #1a1a1a;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 20px rgba(255, 204, 0, 0.4);
+    margin-top: 10px;
+    margin-bottom: 18px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  
+  .btn-register:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(255, 204, 0, 0.6);
+  }
+  
+  .login-link {
+    text-align: center;
+  }
+  
+  .login-link a {
+    color: #ffcc00;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  
+  .login-link a:hover {
+    color: #b8ff33;
+    text-decoration: underline;
+  }
+  
+  .form-note {
+    font-size: 11px;
+    color: #808080;
+    margin-top: 5px;
+  }
+  
+  @media (max-width: 768px) {
+    .auth-container {
+      flex-direction: column;
+    }
+    .auth-left {
+      min-height: 200px;
+    }
+    .logo-section {
+      top: 20px;
+      left: 20px;
+    }
+    .row-custom {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
 
-    <form action="/register" method="POST">
-      <div class="row">
-        <div class="col-12 mb-3">
-          <label class="form-label">Full name</label>
-          <input required name="name" class="form-control" placeholder="Jane Doe">
-        </div>
+<!-- Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Email</label>
-          <input required name="email" type="email" class="form-control" placeholder="you@example.com">
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Password</label>
-          <input required name="password" type="password" class="form-control" placeholder="Choose a password">
-        </div>
-
-        <div class="col-12 mb-3">
-          <label class="form-label">Role</label>
-          <select name="role" class="form-select">
-            <option value="customer" selected>Customer</option>
-            <option value="admin">Admin</option>
-          </select>
-          <div class="form-text">Choose admin only for trusted accounts (you can change later).</div>
-        </div>
-      </div>
-
-      <button class="btn btn-primary w-100">Register</button>
-    </form>
-
-    <p class="text-center small-muted mt-3">Already registered? <a href="/login">Login</a></p>
-  </div>
+<div class="logo-section">
+  <h2>🔐 KeepIT</h2>
 </div>
 
-<%- include("partials/footer") %>
+<div class="auth-container">
+  <div class="auth-card">
+      <h1>Sign Up</h1>
+      <p class="subtitle">
+        Create your account to get started
+      </p>
+      
+      <form action="/register" method="POST">
+        <div class="input-group-custom">
+          <label>Full Name</label>
+          <div class="input-with-icon">
+            <i class="fas fa-user"></i>
+            <input type="text" name="name" required placeholder="Jane Doe">
+          </div>
+        </div>
+        
+        <div class="row-custom">
+          <div class="input-group-custom">
+            <label>Email Address</label>
+            <div class="input-with-icon">
+              <i class="fas fa-envelope"></i>
+              <input type="email" name="email" required placeholder="you@example.com">
+            </div>
+          </div>
+          
+          <div class="input-group-custom">
+            <label>Password</label>
+            <div class="input-with-icon">
+              <i class="fas fa-lock"></i>
+              <input type="password" name="password" required placeholder="••••••••">
+            </div>
+          </div>
+        </div>
+        
+        <div class="input-group-custom">
+          <label>Role</label>
+          <div class="input-with-icon">
+            <i class="fas fa-user-tag"></i>
+            <select name="role" required>
+              <option value="customer" selected>Customer</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <p class="form-note">Choose admin only for trusted accounts (you can change later).</p>
+        </div>
+        
+        <button type="submit" class="btn-register">Create Account</button>
+      </form>
+      
+      <div class="login-link">
+        Already have an account? <a href="/login">Login Now</a>
+      </div>
+  </div>
+</div>

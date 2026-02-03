@@ -163,7 +163,7 @@ module.exports = {
       return computeCartTotals(userId, start_date, end_date, (err, summary) => {
         if (err) return res.status(400).send(err.message || "Checkout failed");
 
-        checkStockAvailability(summary.items, (errStock) => {
+        checkStockAvailability(summary.items, async (errStock) => {
           if (errStock) return res.status(400).send(errStock.message || "Insufficient stock");
 
           const totalAmount = Number(summary.totalAmount) || 0;
@@ -212,7 +212,7 @@ module.exports = {
 
       return computeCartTotals(userId, start_date, end_date, async (err, summary) => {
         if (err) return res.status(400).send(err.message || "Checkout failed");
-        checkStockAvailability(summary.items, (errStock) => {
+        checkStockAvailability(summary.items, async (errStock) => {
           if (errStock) return res.status(400).send(errStock.message || "Insufficient stock");
 
           if (paymentMethod === "PayPal") {
