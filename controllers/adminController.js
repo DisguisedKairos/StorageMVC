@@ -2,6 +2,7 @@ const Storage = require("../models/Storage");
 const User = require("../models/User");
 const Booking = require("../models/Booking");
 const Report = require("../models/Report");
+const Kyc = require("../models/Kyc");
 
 module.exports = {
     // ===== DASHBOARD =====
@@ -88,6 +89,32 @@ module.exports = {
         });
     },
 
+    // ===== KYC MANAGEMENT =====
+    showKycList: (req, res) => {
+        Kyc.listAll((err, rows) => {
+            if (err) return res.status(500).send("Database error");
+            res.render("admin_kyc", { user: req.session.user, kyc: rows || [] });
+        });
+    },
+
+    approveKyc: (req, res) => {
+        const id = parseInt(req.params.id, 10);
+        const adminId = req.session.user?.id || req.session.user?.user_id;
+        Kyc.setStatus({ id, status: "APPROVED", adminId }, (err) => {
+            if (err) return res.status(500).send("Database error");
+            res.redirect("/admin/kyc");
+        });
+    },
+
+    rejectKyc: (req, res) => {
+        const id = parseInt(req.params.id, 10);
+        const adminId = req.session.user?.id || req.session.user?.user_id;
+        Kyc.setStatus({ id, status: "REJECTED", adminId }, (err) => {
+            if (err) return res.status(500).send("Database error");
+            res.redirect("/admin/kyc");
+        });
+    },
+
     // ===== USER MANAGEMENT =====
     showUserList: (req, res) => {   // ✅ Correct name
         User.getAll((err, users) => {
@@ -143,6 +170,32 @@ module.exports = {
     deleteBooking: (req, res) => {
         Booking.remove(req.params.id, () => {
             res.redirect("/admin/bookings");
+        });
+    },
+
+    // ===== KYC MANAGEMENT =====
+    showKycList: (req, res) => {
+        Kyc.listAll((err, rows) => {
+            if (err) return res.status(500).send("Database error");
+            res.render("admin_kyc", { user: req.session.user, kyc: rows || [] });
+        });
+    },
+
+    approveKyc: (req, res) => {
+        const id = parseInt(req.params.id, 10);
+        const adminId = req.session.user?.id || req.session.user?.user_id;
+        Kyc.setStatus({ id, status: "APPROVED", adminId }, (err) => {
+            if (err) return res.status(500).send("Database error");
+            res.redirect("/admin/kyc");
+        });
+    },
+
+    rejectKyc: (req, res) => {
+        const id = parseInt(req.params.id, 10);
+        const adminId = req.session.user?.id || req.session.user?.user_id;
+        Kyc.setStatus({ id, status: "REJECTED", adminId }, (err) => {
+            if (err) return res.status(500).send("Database error");
+            res.redirect("/admin/kyc");
         });
     }
 };

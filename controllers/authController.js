@@ -26,30 +26,29 @@ module.exports = {
             // Save user in session
             req.session.user = {
                 id: user.user_id,
+                user_id: user.user_id,
                 name: user.name,
                 email: user.email,
                 role: user.role,
                 walletBalance: 0
             };
 
-            // Load wallet balance for customers
+            // Load wallet balance only for customers, then redirect by role
+            const redirectByRole = () => {
+                if (user.role === "admin") return res.redirect("/admin/dashboard");
+                if (user.role === "provider") return res.redirect("/provider/dashboard");
+                return res.redirect("/customer/dashboard");
+            };
+
             if (user.role === "customer") {
                 User.getWalletBalance(user.user_id, (errBalance, balance) => {
-                    req.session.user.walletBalance = balance || 0;
-                    req.session.user.wallet_balance = balance || 0;
-                    
-                    if (user.role === "admin") {
-                        return res.redirect("/admin/dashboard");
-                    } else {
-                        return res.redirect("/customer/dashboard");
-                    }
+                    // Even if balance lookup fails, don't block login
+                    req.session.user.walletBalance = (balance || 0);
+                    req.session.user.wallet_balance = (balance || 0);
+                    return redirectByRole();
                 });
             } else {
-                if (user.role === "admin") {
-                    res.redirect("/admin/dashboard");
-                } else {
-                    res.redirect("/customer/dashboard");
-                }
+                return redirectByRole();
             }
         });
     },
