@@ -7,6 +7,30 @@
     <a href="/admin/dashboard" class="btn btn-outline-primary btn-sm">Back to Dashboard</a>
   </div>
 
+  <!-- ===== Charts ===== -->
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 rounded-4 p-3">
+        <h6 class="mb-3">Monthly Revenue (Last 12 Months)</h6>
+        <canvas id="monthlyRevenueChart" height="160"></canvas>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 rounded-4 p-3">
+        <h6 class="mb-3">Revenue by Payment Method</h6>
+        <canvas id="revenueByMethodChart" height="160"></canvas>
+      </div>
+    </div>
+    <div class="col-lg-12">
+      <div class="card shadow-sm border-0 rounded-4 p-3">
+        <h6 class="mb-3">Top Storage Spaces (by Revenue)</h6>
+        <canvas id="topStorageChart" height="140"></canvas>
+      </div>
+    </div>
+  </div>
+
+
+
   <div class="row g-3 mb-4">
     <div class="col-md-3">
       <div class="card shadow-soft text-center p-3">
@@ -131,4 +155,63 @@
   </div>
 </div>
 
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  const monthly = <%- JSON.stringify(monthly || []) %>;
+  const byMethod = <%- JSON.stringify(byMethod || []) %>;
+  const topStorage = <%- JSON.stringify(topStorage || []) %>;
+
+  // Monthly revenue (sort ascending by month)
+  const monthlySorted = [...monthly].sort((a,b) => String(a.month).localeCompare(String(b.month)));
+  const mLabels = monthlySorted.map(r => r.month);
+  const mValues = monthlySorted.map(r => Number(r.revenue || 0));
+
+  const ctx1 = document.getElementById('monthlyRevenueChart');
+  if (ctx1) {
+    new Chart(ctx1, {
+      type: 'line',
+      data: { labels: mLabels, datasets: [{ label: 'Revenue', data: mValues, tension: 0.3 }] },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: true } },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+  }
+
+  // Revenue by method
+  const methodLabels = byMethod.map(r => r.method || 'Unknown');
+  const methodValues = byMethod.map(r => Number(r.revenue || 0));
+  const ctx2 = document.getElementById('revenueByMethodChart');
+  if (ctx2) {
+    new Chart(ctx2, {
+      type: 'bar',
+      data: { labels: methodLabels, datasets: [{ label: 'Revenue', data: methodValues }] },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: true } },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+  }
+
+  // Top storage by revenue
+  const topLabels = topStorage.map(r => r.title || ('Storage #' + r.storage_id));
+  const topValues = topStorage.map(r => Number(r.revenue || 0));
+  const ctx3 = document.getElementById('topStorageChart');
+  if (ctx3) {
+    new Chart(ctx3, {
+      type: 'bar',
+      data: { labels: topLabels, datasets: [{ label: 'Revenue', data: topValues }] },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: true } },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+  }
+</script>
+
 <%- include("partials/footer") %>
+

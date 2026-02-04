@@ -1,4 +1,9 @@
 <%- include("partials/header", { title: "Login" }) %>
+<!-- Theme toggle (works on auth pages too) -->
+<div class="position-fixed top-0 end-0 p-3" style="z-index: 3000;">
+  <button id="themeToggle" type="button" class="btn btn-outline-light btn-sm" style="border-radius: 20px; padding: 8px 18px;">🌙 Dark Mode</button>
+</div>
+
 
 <style>
   body {
@@ -205,6 +210,40 @@
       left: 20px;
     }
   }
+  /* ===== Light/Dark mode improvements for auth pages ===== */
+  body:not(.dark-mode) .auth-card {
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(15, 100, 51, 0.18);
+  }
+  body:not(.dark-mode) .auth-card h1 { color: #0f6433; }
+  body:not(.dark-mode) .auth-card .subtitle { color: #475569; }
+  body:not(.dark-mode) .input-group-custom label { color: #334155; }
+  body:not(.dark-mode) .remember-me { color: #334155; }
+  body:not(.dark-mode) .forgot-link { color: #0f6433; }
+  body:not(.dark-mode) .input-with-icon i { color: #64748b; }
+  body:not(.dark-mode) .input-with-icon input {
+    background: rgba(255, 255, 255, 0.85);
+    color: #0f172a;
+    border-color: rgba(15, 100, 51, 0.25);
+  }
+  body:not(.dark-mode) .input-with-icon input::placeholder { color: #64748b; }
+  body:not(.dark-mode) .btn-login {
+    background: linear-gradient(135deg, rgba(15, 100, 51, 0.95), rgba(20, 128, 75, 0.95));
+  }
+  body.dark-mode .auth-card h1 { color: #ffffff; }
+  body.dark-mode .auth-card .subtitle { color: #a0a0a0; }
+  body.dark-mode .input-group-custom label { color: #c0c0c0; }
+  body.dark-mode .remember-me { color: #c0c0c0; }
+  body.dark-mode .input-with-icon input { color: #ffffff; }
+  body.dark-mode .auth-card {
+    background: rgba(42, 51, 72, 0.88);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  }
+  body.dark-mode .input-with-icon input {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.22);
+  }
+
 </style>
 
 <!-- Font Awesome for icons -->
@@ -254,3 +293,5 @@
       </div>
   </div>
 </div>
+
+<%- include("partials/footer") %>

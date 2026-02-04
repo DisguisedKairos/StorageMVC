@@ -1,443 +1,91 @@
-<%- include("partials/header", { title: "Storage List" }) %>
+<%- include("partials/header", { title: "Browse Storage" }) %>
 <%- include("partials/navbar", { user: user }) %>
 
-<style>
-  body {
-    background: #9b9b9b;
-  }
-
-  .hero-section {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 60px;
-    padding: 80px 0;
-    flex-wrap: wrap;
-    background: #f5f5f5;
-  }
-
-  .hero-left {
-    flex: 1;
-    min-width: 300px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .blob-image {
-    width: 100%;
-    max-width: 450px;
-    height: 450px;
-    background: url('/images/storageBG.png') center/cover;
-    border-radius: 45% 55% 50% 50% / 50% 50% 50% 50%;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-    animation: blobMove 8s ease-in-out infinite;
-  }
-
-  @keyframes blobMove {
-    0%, 100% {
-      border-radius: 45% 55% 50% 50% / 50% 50% 50% 50%;
-      transform: translateY(0px);
-    }
-    25% {
-      border-radius: 50% 50% 45% 55% / 50% 50% 50% 50%;
-    }
-    50% {
-      border-radius: 50% 50% 50% 50% / 45% 55% 50% 50%;
-      transform: translateY(-20px);
-    }
-    75% {
-      border-radius: 55% 45% 50% 50% / 50% 50% 50% 50%;
-    }
-  }
-
-  .hero-right {
-    flex: 1;
-    min-width: 300px;
-  }
-
-  .hero-right h2 {
-    font-size: 48px;
-    font-weight: 700;
-    color: #1a1a1a;
-    margin-bottom: 20px;
-    line-height: 1.2;
-  }
-
-  .hero-right p {
-    font-size: 16px;
-    color: #666;
-    line-height: 1.8;
-    margin-bottom: 15px;
-  }
-
-  .hero-right strong {
-    color: #333;
-    font-weight: 600;
-  }
-
-  .discover-btn {
-    display: inline-block;
-    padding: 14px 40px;
-    background: #f0f0f0;
-    border: none;
-    border-radius: 30px;
-    font-size: 15px;
-    font-weight: 600;
-    color: #333;
-    text-decoration: none;
-    cursor: pointer;
-    transition: all 0.3s;
-    margin-top: 20px;
-  }
-
-  .discover-btn:hover {
-    background: #ddd;
-    transform: translateY(-2px);
-  }
-
-  .decorative-dots {
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    background: #9fc9c9;
-    border-radius: 50%;
-    opacity: 0.6;
-  }
-
-  .dot-1 { top: 15%; right: 10%; }
-  .dot-2 { bottom: 20%; left: 5%; }
-  .dot-3 { top: 40%; right: 5%; width: 20px; height: 20px; }
-
-  .decorative-line {
-    position: absolute;
-    width: 100px;
-    height: 3px;
-    background: #ccc;
-    opacity: 0.4;
-    top: 10%;
-    left: 5%;
-    transform: rotate(-15deg);
-  }
-
-  /* Storage Cards Section */
-  .storage-section {
-    margin-top: 60px;
-    padding: 60px 20px;
-    background: #f5f5f5;
-  }
-
-  .storage-header {
-    text-align: center;
-    margin-bottom: 50px;
-  }
-
-  .storage-header h3 {
-    font-size: 36px;
-    font-weight: 700;
-    color: #1a1a1a;
-    margin-bottom: 15px;
-  }
-
-  .storage-header p {
-    font-size: 16px;
-    color: #666;
-  }
-
-  .storage-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 30px;
-  }
-
-  .storage-card {
-    background: white;
-    border-radius: 20px;
-    padding: 30px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-    transition: all 0.3s;
-    border: 1px solid rgba(0, 0, 0, 0.05);
-  }
-
-  .storage-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
-  }
-
-  .storage-card h5 {
-    font-size: 18px;
-    font-weight: 700;
-    color: #1a1a1a;
-    margin-bottom: 12px;
-  }
-
-  .storage-card p {
-    font-size: 14px;
-    color: #666;
-    margin-bottom: 8px;
-  }
-
-  .storage-card .price {
-    font-size: 20px;
-    font-weight: 700;
-    color: #4ECDC4;
-    margin: 15px 0;
-  }
-
-  .storage-card .btn {
-    border-radius: 15px;
-    font-weight: 600;
-    padding: 10px 20px;
-    font-size: 14px;
-  }
-
-  .btn-add {
-    background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
-    color: white;
-    border: none;
-    width: 100%;
-    margin-bottom: 10px;
-  }
-
-  .btn-add:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(78, 205, 196, 0.3);
-  }
-
-  .btn-cart {
-    background: #f0f0f0;
-    color: #333;
-    border: none;
-    width: 100%;
-  }
-
-  .btn-cart:hover {
-    background: #e0e0e0;
-  }
-
-  .btn-login {
-    background: #f0f0f0;
-    color: #333;
-    border: none;
-    width: 100%;
-    text-decoration: none;
-    display: block;
-    text-align: center;
-    padding: 10px 20px;
-    border-radius: 15px;
-  }
-
-  /* Location Cards */
-  .location-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    max-width: 1400px;
-    gap: 40px;
-    margin: 0 auto;
-    padding: 0;
-  }
-
-  @media (max-width: 1024px) {
-    .location-grid {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 30px;
-    }
-  }
-
-  @media (max-width: 640px) {
-    .location-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  .location-card {
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s;
-  }
-
-  .location-card:hover {
-    transform: translateY(-10px);
-  }
-
-  .location-blob {
-    width: 100%;
-    max-width: 320px;
-    height: 320px;
-    margin: 0 auto 25px;
-    overflow: hidden;
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
-    transition: all 0.3s;
-    border-radius: 50%;
-  }
-
-  .location-card:hover .location-blob {
-    transform: scale(1.05);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
-  }
-
-  .location-card h4 {
-    font-size: 24px;
-    font-weight: 700;
-    color: #1a1a1a;
-    margin: 0;
-  }
-
-  .btn-back {
-    background: #f0f0f0;
-    border: none;
-    padding: 10px 25px;
-    border-radius: 20px;
-    font-weight: 600;
-    cursor: pointer;
-    margin-left: 20px;
-    transition: all 0.3s;
-  }
-
-  .btn-back:hover {
-    background: #ddd;
-  }
-
-  @media (max-width: 768px) {
-    .hero-section {
-      padding: 40px 0;
-      gap: 30px;
-    }
-
-    .hero-right h2 {
-      font-size: 32px;
-    }
-
-    .blob-image {
-      max-width: 100%;
-    }
-
-    .storage-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .location-blob {
-      width: 220px;
-      height: 220px;
-    }
-  }
-</style>
-
-<script>
-  function showStorageByLocation(location) {
-    // Hide location cards
-    document.querySelector('.location-grid').parentElement.style.display = 'none';
-    
-    // Show storage grid
-    document.getElementById('storage-grid').style.display = 'block';
-    document.getElementById('location-title').textContent = 'Available Storage in ' + location;
-    
-    // Filter storage cards
-    const cards = document.querySelectorAll('.storage-card');
-    cards.forEach(card => {
-      const cardLocation = card.getAttribute('data-location');
-      if (cardLocation === location) {
-        card.style.display = 'block';
-      } else {
-        card.style.display = 'none';
-      }
-    });
-    
-    // Smooth scroll to storage section
-    document.getElementById('storage-grid').scrollIntoView({ behavior: 'smooth' });
-  }
-
-  function showAllLocations() {
-    // Show location cards
-    document.querySelector('.location-grid').parentElement.style.display = 'block';
-    
-    // Hide storage grid
-    document.getElementById('storage-grid').style.display = 'none';
-    
-    // Smooth scroll to top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-</script>
-
-<div class="container container-max">
-  <!-- Hero Section -->
-  <div class="hero-section">
-    <div class="hero-left">
-      <div class="blob-image"></div>
-    </div>
-    <div class="hero-right">
-      <h2>Features</h2>
-      <p>Our team is composed of experienced storage professionals ready to assist you.</p>
-      <p><strong>We offer a variety of storage options,</strong> including climate-controlled units, to suit your needs.</p>
-      <a href="#locations-section" class="discover-btn" onclick="document.getElementById('locations-section').scrollIntoView({behavior: 'smooth'}); return false;">Discover more</a>
-    </div>
-    <div class="decorative-line"></div>
-    <div class="decorative-dots dot-1"></div>
-    <div class="decorative-dots dot-2"></div>
-    <div class="decorative-dots dot-3"></div>
+<div class="container container-max py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Browse Storage</h3>
   </div>
 
-  <!-- Locations Section -->
-  <div class="storage-section" id="locations-section">
-    <div class="storage-header">
-      <h3>Browse by Location</h3>
-      <p>Select your preferred area</p>
-    </div>
-
-    <div class="location-grid">
-      <div class="location-card" onclick="showStorageByLocation('Tampines')">
-        <div class="location-blob" style="background: url('/images/Tampines.png') center/cover;"></div>
-        <h4>Tampines</h4>
+  <div class="card shadow-soft p-3 mb-4">
+    <form method="GET" action="/storage" class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label">Search</label>
+        <input class="form-control" name="q" value="<%= (filters && filters.q) || '' %>" placeholder="title, location, description">
       </div>
-
-      <div class="location-card" onclick="showStorageByLocation('Jurong East')">
-        <div class="location-blob" style="background: url('/images/Jurong East.png') center/cover;"></div>
-        <h4>Jurong East</h4>
+      <div class="col-md-2">
+        <label class="form-label">Type</label>
+        <select class="form-select" name="type">
+          <option value="" <%= !filters || !filters.type ? 'selected' : '' %>>All</option>
+          <option value="physical" <%= filters && filters.type === 'physical' ? 'selected' : '' %>>Physical</option>
+          <option value="digital" <%= filters && filters.type === 'digital' ? 'selected' : '' %>>Digital</option>
+        </select>
       </div>
-
-      <div class="location-card" onclick="showStorageByLocation('Woodlands')">
-        <div class="location-blob" style="background: url('/images/Woodlands.png') center/cover;"></div>
-        <h4>Woodlands</h4>
+      <div class="col-md-2">
+        <label class="form-label">Size</label>
+        <select class="form-select" name="size">
+          <option value="" <%= !filters || !filters.size ? 'selected' : '' %>>All</option>
+          <option value="Small" <%= filters && filters.size === 'Small' ? 'selected' : '' %>>Small</option>
+          <option value="Medium" <%= filters && filters.size === 'Medium' ? 'selected' : '' %>>Medium</option>
+          <option value="Large" <%= filters && filters.size === 'Large' ? 'selected' : '' %>>Large</option>
+        </select>
       </div>
-
-      <div class="location-card" onclick="showStorageByLocation('Bishan')">
-        <div class="location-blob" style="background: url('/images/Bishan.png') center/cover;"></div>
-        <h4>Bishan</h4>
+      <div class="col-md-2">
+        <label class="form-label">Max $/day</label>
+        <input class="form-control" name="priceMax" type="number" step="0.01" value="<%= (filters && filters.priceMax) || '' %>">
       </div>
-    </div>
+      <div class="col-md-2 d-grid">
+        <button class="btn btn-primary">Apply</button>
+      </div>
+    </form>
   </div>
 
-  <!-- Storage Items by Location -->
-  <div class="storage-section" id="storage-grid" style="display: none;">
-    <div class="storage-header">
-      <h3 id="location-title">Available Storage</h3>
-      <button onclick="showAllLocations()" class="btn-back">← Back to Locations</button>
-    </div>
+  <div class="row g-4">
+    <% if (!storage || storage.length === 0) { %>
+      <div class="col-12">
+        <div class="alert alert-warning">No storage listings matched your filters.</div>
+      </div>
+    <% } %>
 
-    <div class="storage-grid">
-      <% storage.forEach(s => { %>
-        <div class="storage-card" data-location="<%= s.location || 'N/A' %>">
-          <h5><%= s.title %></h5>
-          <p><strong>Size:</strong> <%= s.size %></p>
-          <p><strong>Location:</strong> <%= s.location || 'N/A' %></p>
-          <div class="price">$<%= s.price_per_day || s.price %> <span style="font-size: 14px; color: #999;">/day</span></div>
+    <% storage.forEach(s => { %>
+      <div class="col-md-4">
+        <div class="card h-100 shadow-soft p-3">
+          <div class="d-flex justify-content-between">
+            <h5 class="fw-bold mb-1"><%= s.title %></h5>
+            <span class="badge bg-dark"><%= (s.storage_type || 'physical').toUpperCase() %></span>
+          </div>
 
-          <div>
+          <p class="mb-1 small-muted"><strong>Size:</strong> <%= s.size %></p>
+          <p class="mb-1 small-muted"><strong>Location:</strong> <%= s.location || 'N/A' %></p>
+          <p class="mb-1 small-muted"><strong>Availability:</strong> <%= s.available_units %>/<%= s.total_units %> units</p>
+
+          <div class="d-flex align-items-center justify-content-between mt-2">
+            <div>
+              <div class="fw-bold text-success">$<%= s.dynamic_price_per_day || (s.price_per_day || s.price) %> / day</div>
+              <div class="small-muted">Base: $<%= s.price_per_day || s.price %> / day</div>
+            </div>
+            <div class="text-end">
+              <div class="fw-semibold"><%= Number(s.avg_rating || 0).toFixed(1) %>★</div>
+              <div class="small-muted">(<%= s.review_count || 0 %>)</div>
+            </div>
+          </div>
+
+          <div class="mt-3 d-grid gap-2">
+            <a href="/storage/<%= s.storage_id %>" class="btn btn-outline-dark">View Details</a>
+
             <% if (user && user.role === 'customer') { %>
-              <form action="/cart/add" method="POST">
+              <form action="/cart/add" method="POST" class="d-grid">
                 <input type="hidden" name="storage_id" value="<%= s.storage_id %>">
-                <button type="submit" class="btn btn-add">Add to Cart</button>
+                <button type="submit" class="btn btn-primary" <%= (s.available_units || 0) <= 0 ? 'disabled' : '' %>>Add to Cart</button>
               </form>
-              <a href="/cart" class="btn btn-cart">View Cart</a>
             <% } else if (!user) { %>
-              <a href="/login" class="btn btn-login">Login to Add to Cart</a>
+              <a href="/login" class="btn btn-outline-primary">Login to Rent</a>
             <% } else { %>
-              <button class="btn btn-cart" disabled style="opacity: 0.5;">Owner/Admin</button>
+              <button class="btn btn-secondary" disabled>Not available for this role</button>
             <% } %>
           </div>
         </div>
-      <% }) %>
-    </div>
+      </div>
+    <% }) %>
   </div>
 </div>
 

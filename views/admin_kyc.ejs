@@ -1,0 +1,52 @@
+<%- include("partials/header", { title: "Admin - KYC" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">KYC Requests</h3>
+  </div>
+
+  <% if (!kyc || kyc.length === 0) { %>
+    <div class="alert alert-light">No KYC submissions.</div>
+  <% } else { %>
+    <div class="table-responsive card shadow-soft p-3">
+      <table class="table align-middle mb-0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Provider</th>
+            <th>Details</th>
+            <th>Status</th>
+            <th class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% kyc.forEach(k => { %>
+            <tr>
+              <td>#<%= k.kyc_id %></td>
+              <td class="fw-semibold"><%= k.name %><div class="small-muted"><%= k.email %></div></td>
+              <td>
+                <div><strong>Name:</strong> <%= k.full_name %></div>
+                <div><strong><%= k.id_type %>:</strong> <%= k.id_number %></div>
+                <div class="small-muted">Updated: <%= new Date(k.updated_at).toLocaleString() %></div>
+              </td>
+              <td>
+                <span class="badge <%= k.status === 'APPROVED' ? 'bg-success' : (k.status === 'REJECTED' ? 'bg-danger' : 'bg-warning text-dark') %>"><%= k.status %></span>
+              </td>
+              <td class="text-end">
+                <form method="POST" action="/admin/kyc/<%= k.kyc_id %>/approve" class="d-inline">
+                  <button class="btn btn-sm btn-success" <%= k.status === 'APPROVED' ? 'disabled' : '' %>>Approve</button>
+                </form>
+                <form method="POST" action="/admin/kyc/<%= k.kyc_id %>/reject" class="d-inline">
+                  <button class="btn btn-sm btn-danger" <%= k.status === 'REJECTED' ? 'disabled' : '' %>>Reject</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<%- include("partials/footer") %>
