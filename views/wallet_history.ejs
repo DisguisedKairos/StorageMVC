@@ -64,7 +64,7 @@
                       <td>
                         <strong><%= tx.created_at_display %></strong>
                         <br>
-                        <small class="text-muted"><%= tx.created_at ? new Date(tx.created_at).toLocaleTimeString('en-SG') : '' %></small>
+                        <small class="text-muted"><%= tx.created_at_time %></small>
                       </td>
                       <td>
                         <% if (tx.type === 'topup') { %>

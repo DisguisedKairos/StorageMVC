@@ -76,7 +76,7 @@
                   <% transactions.slice(0, 10).forEach(tx => { %>
                     <tr>
                       <td>
-                        <small><%= tx.created_at ? new Date(tx.created_at).toLocaleString('en-SG') : 'N/A' %></small>
+                        <small><%= tx.created_at_display || 'N/A' %></small>
                       </td>
                       <td>
                         <% if (tx.type === 'topup') { %>

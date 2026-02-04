@@ -186,7 +186,7 @@ module.exports = {
       return computeCartTotals(userId, start_date, end_date, (err, summary) => {
         if (err) return res.status(400).send(err.message || "Checkout failed");
 
-        checkStockAvailability(summary.items, async (errStock) => {
+        checkStockAvailability(summary.items, start_date, end_date, (errStock) => {
           if (errStock) return res.status(400).send(errStock.message || "Insufficient stock");
 
           const totalAmount = Number(summary.totalAmount) || 0;
@@ -198,24 +198,49 @@ module.exports = {
               if (errInv) return res.status(400).send(errInv.message || "Checkout failed");
 
               decrementStock(summary.items, () => {});
-              User.adjustWalletBalance(userId, -totalAmount, () => {});
+              
+              // Update wallet balance and ensure session is saved before rendering
+              User.adjustWalletBalance(userId, -totalAmount, (errAdj, newBalance) => {
+                if (!errAdj && newBalance !== undefined) {
+                  req.session.user.walletBalance = newBalance;
+                  req.session.user.wallet_balance = newBalance;
+                }
 
-              data.header.subtotal = Number(data.header.subtotal) || 0;
-              data.header.tax = Number(data.header.tax) || 0;
-              data.header.totalAmount = Number(data.header.totalAmount) || 0;
-              data.items = (data.items || []).map((it) => ({
-                ...it,
-                unit_price: Number(it.unit_price) || 0,
-                subtotal: Number(it.subtotal) || 0,
-                quantity: parseInt(it.quantity, 10) || 0,
-                days: parseInt(it.days, 10) || 0
-              }));
+                // Record wallet transaction for this purchase
+                const WalletTransaction = require("../models/WalletTransaction");
+                const description = `Payment for booking from ${start_date} to ${end_date}`;
+                WalletTransaction.create({
+                  user_id: userId,
+                  type: "purchase",
+                  amount: totalAmount,
+                  description: description,
+                  status: "completed"
+                }, (errTx) => {
+                  if (errTx) console.error("Error recording wallet transaction:", errTx);
+                  
+                  // Save session and then render
+                  req.session.save((saveErr) => {
+                    if (saveErr) console.error("Session save error:", saveErr);
+                    
+                    data.header.subtotal = Number(data.header.subtotal) || 0;
+                    data.header.tax = Number(data.header.tax) || 0;
+                    data.header.totalAmount = Number(data.header.totalAmount) || 0;
+                    data.items = (data.items || []).map((it) => ({
+                      ...it,
+                      unit_price: Number(it.unit_price) || 0,
+                      subtotal: Number(it.subtotal) || 0,
+                      quantity: parseInt(it.quantity, 10) || 0,
+                      days: parseInt(it.days, 10) || 0
+                    }));
 
-              return res.render("invoice", {
-                user: req.session.user,
-                header: data.header,
-                items: data.items,
-                paymentMethod: "EWallet"
+                    return res.render("invoice", {
+                      user: req.session.user,
+                      header: data.header,
+                      items: data.items,
+                      paymentMethod: "EWallet"
+                    });
+                  });
+                });
               });
             });
           });
@@ -235,7 +260,7 @@ module.exports = {
 
       return computeCartTotals(userId, start_date, end_date, async (err, summary) => {
         if (err) return res.status(400).send(err.message || "Checkout failed");
-        checkStockAvailability(summary.items, async (errStock) => {
+        checkStockAvailability(summary.items, start_date, end_date, async (errStock) => {
           if (errStock) return res.status(400).send(errStock.message || "Insufficient stock");
 
           if (paymentMethod === "PayPal") {
