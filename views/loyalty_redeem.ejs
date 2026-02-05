@@ -21,9 +21,9 @@
           </div>
           <div class="d-flex justify-content-between align-items-center mb-3">
             <span class="text-muted">Maximum Discount:</span>
-            <span class="fw-bold text-success h5 mb-0">$<%= (loyalty_points / 100 * redeem_rate).toFixed(2) %></span>
+            <span class="fw-bold text-success h5 mb-0">$<%= (loyalty_points / 100 * parseFloat(redeem_rate)).toFixed(2) %></span>
           </div>
-          <small class="text-muted">100 points = $<%= redeem_rate.toFixed(2) %> discount</small>
+          <small class="text-muted">100 points = $<%= parseFloat(redeem_rate).toFixed(2) %> discount</small>
         </div>
       </div>
 
@@ -166,7 +166,7 @@
 </div>
 
 <script>
-  const redeemRate = <%= redeem_rate %>;
+  const redeemRate = parseFloat('<%= redeem_rate %>');
   const maxPoints = <%= loyalty_points %>;
 
   // Update discount value when input changes

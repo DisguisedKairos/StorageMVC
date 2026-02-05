@@ -17,7 +17,7 @@
         <div class="card-body text-center">
           <h6 class="card-title text-uppercase opacity-75 mb-2">Available Points</h6>
           <h2 class="card-text fw-bold mb-3"><%= loyalty_points.toLocaleString() %></h2>
-          <p class="mb-0 small">Redeemable for $<%= (loyalty_points / 100 * redeem_rate).toFixed(2) %> discount</p>
+          <p class="mb-0 small">Redeemable for $<%= (loyalty_points / 100 * parseFloat(redeem_rate)).toFixed(2) %> discount</p>
         </div>
       </div>
     </div>
@@ -28,7 +28,7 @@
         <div class="card-body text-center">
           <h6 class="card-title text-uppercase opacity-75 mb-2">Current Tier</h6>
           <h2 class="card-text fw-bold mb-2">⭐ <%= tier_name %></h2>
-          <p class="mb-0 small"><%= earn_rate %>x points • <%= (redeem_rate * 100) %>% redeem value</p>
+          <p class="mb-0 small"><%= parseFloat(earn_rate) %>x points • <%= (parseFloat(redeem_rate) * 100).toFixed(0) %>% redeem value</p>
         </div>
       </div>
     </div>
@@ -57,7 +57,7 @@
           <span class="text-white fw-bold small"><%= points_needed %> more points needed</span>
         </div>
       </div>
-      <small class="text-muted mt-2 d-block">Reach <%= next_tier %> tier to earn <%= (tiers.find(t => t.tier_name === next_tier)?.earn_rate || 1.5) %>x points and enjoy better redeem rates!</small>
+      <small class="text-muted mt-2 d-block">Reach <%= next_tier %> tier to earn <%= parseFloat(tiers.find(t => t.tier_name === next_tier)?.earn_rate || 1.5) %>x points and enjoy better redeem rates!</small>
     </div>
   </div>
   <% } %>
@@ -82,9 +82,9 @@
                   <% } %>
                 </p>
                 <ul class="small mb-0 ps-3">
-                  <li><strong><%= tier.earn_rate %>x</strong> points per $1</li>
-                  <li><strong><%= (tier.redeem_rate * 100) %>%</strong> redeem value</li>
-                  <li><strong><%= (tier.bonus_multiplier * 100) %>%</strong> bonus</li>
+                  <li><strong><%= parseFloat(tier.earn_rate) %>x</strong> points per $1</li>
+                  <li><strong><%= (parseFloat(tier.redeem_rate) * 100).toFixed(0) %>%</strong> redeem value</li>
+                  <li><strong><%= (parseFloat(tier.bonus_multiplier) * 100).toFixed(0) %>%</strong> bonus</li>
                 </ul>
               </div>
             </div>
