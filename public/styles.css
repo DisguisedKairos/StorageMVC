@@ -9,6 +9,12 @@ body {
   position: relative;
 }
 
+.dashboard-bg {
+  background: url('/images/dashboardBG.png') no-repeat center center fixed;
+  background-size: cover;
+  background-position: center;
+}
+
 /* Dark overlay for readability */
 body::before {
   content: "";

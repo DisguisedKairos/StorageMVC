@@ -2,23 +2,45 @@
 <%- include("partials/navbar", { user: user }) %>
 
 <style>
-  body {
-    background: #9b9b9b;
+  :root {
+    --tone-1-darkest: #2F6B6A;
+    --tone-2-darker: #3D7675;
+    --tone-3-medium: #4A8B8A;
+    --tone-4-light: #6BA8A7;
+    --tone-5-lightest: #A8D4D1;
+    --cream-bg: #F0EDE5;
   }
 
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--tone-4-light);
+  }  
+
   .hero-section {
+    width: 100%;
+    background: var(--cream-bg);
+    padding: 80px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hero-content {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 60px;
-    padding: 80px 0;
     flex-wrap: wrap;
-    background: #f5f5f5;
+    max-width: 1300px;
+    width: 100%;
+    padding: 0 40px;
+    position: relative;
   }
 
   .hero-left {
     flex: 1;
-    min-width: 300px;
+    min-width: 400px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -26,8 +48,9 @@
 
   .blob-image {
     width: 100%;
-    max-width: 450px;
-    height: 450px;
+    max-width: 520px;
+    aspect-ratio: 1;
+    height: auto;
     background: url('/images/storageBG.png') center/cover;
     border-radius: 45% 55% 50% 50% / 50% 50% 50% 50%;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
@@ -54,21 +77,24 @@
   .hero-right {
     flex: 1;
     min-width: 300px;
+    padding-right: 20px;
   }
 
   .hero-right h2 {
-    font-size: 48px;
-    font-weight: 700;
-    color: #1a1a1a;
-    margin-bottom: 20px;
+    font-size: 52px;
+    font-weight: 300;
+    color: #5a5a5a;
+    margin-bottom: 30px;
     line-height: 1.2;
+    letter-spacing: -1px;
   }
 
   .hero-right p {
-    font-size: 16px;
-    color: #666;
+    font-size: 17px;
+    color: #7a7a7a;
     line-height: 1.8;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
+    font-weight: 400;
   }
 
   .hero-right strong {
@@ -122,26 +148,34 @@
 
   /* Storage Cards Section */
   .storage-section {
-    margin-top: 60px;
-    padding: 60px 20px;
-    background: #f5f5f5;
+    width: 100%;
+    background: var(--cream-bg);
+    padding: 80px 0;
+  }
+
+  .storage-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 40px;
   }
 
   .storage-header {
     text-align: center;
-    margin-bottom: 50px;
+    margin-bottom: 40px;
   }
 
   .storage-header h3 {
-    font-size: 36px;
-    font-weight: 700;
-    color: #1a1a1a;
+    font-size: 42px;
+    font-weight: 300;
+    color: #5a5a5a;
     margin-bottom: 15px;
+    letter-spacing: -0.5px;
   }
 
   .storage-header p {
     font-size: 16px;
-    color: #666;
+    color: #8a8a8a;
+    font-weight: 400;
   }
 
   .storage-grid {
@@ -151,12 +185,12 @@
   }
 
   .storage-card {
-    background: white;
+    background: #ffffff;
     border-radius: 20px;
     padding: 30px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
     transition: all 0.3s;
-    border: 1px solid rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(200, 190, 180, 0.3);
   }
 
   .storage-card:hover {
@@ -262,13 +296,14 @@
 
   .location-blob {
     width: 100%;
-    max-width: 320px;
-    height: 320px;
+    max-width: 300px;
+    aspect-ratio: 1;
+    height: auto;
     margin: 0 auto 25px;
     overflow: hidden;
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
     transition: all 0.3s;
-    border-radius: 50%;
+    border-radius: 45% 55% 52% 48% / 48% 45% 55% 52%;
   }
 
   .location-card:hover .location-blob {
@@ -300,20 +335,40 @@
 
   @media (max-width: 768px) {
     .hero-section {
-      padding: 40px 0;
+      padding: 60px 0;
+    }
+
+    .hero-content {
+      padding: 0 20px;
       gap: 30px;
     }
 
-    .hero-right h2 {
-      font-size: 32px;
+    .hero-left {
+      min-width: 280px;
     }
 
     .blob-image {
-      max-width: 100%;
+      max-width: 380px;
+    }
+
+    .hero-right h2 {
+      font-size: 36px;
+    }
+
+    .storage-section {
+      padding: 60px 0;
+    }
+
+    .storage-content {
+      padding: 0 20px;
     }
 
     .storage-grid {
       grid-template-columns: 1fr;
+    }
+
+    .location-grid {
+      max-width: 100%;
     }
 
     .location-blob {
@@ -325,10 +380,10 @@
 
 <script>
   function showStorageByLocation(location) {
-    // Hide location cards
-    document.querySelector('.location-grid').parentElement.style.display = 'none';
+    // Hide location section
+    document.getElementById('locations-section').style.display = 'none';
     
-    // Show storage grid
+    // Show storage grid section
     document.getElementById('storage-grid').style.display = 'block';
     document.getElementById('location-title').textContent = 'Available Storage in ' + location;
     
@@ -348,20 +403,20 @@
   }
 
   function showAllLocations() {
-    // Show location cards
-    document.querySelector('.location-grid').parentElement.style.display = 'block';
+    // Show location section
+    document.getElementById('locations-section').style.display = 'block';
     
-    // Hide storage grid
+    // Hide storage grid section
     document.getElementById('storage-grid').style.display = 'none';
     
-    // Smooth scroll to top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Smooth scroll to locations
+    document.getElementById('locations-section').scrollIntoView({ behavior: 'smooth' });
   }
 </script>
 
-<div class="container container-max">
-  <!-- Hero Section -->
-  <div class="hero-section">
+<!-- Hero Section -->
+<section class="hero-section">
+  <div class="hero-content">
     <div class="hero-left">
       <div class="blob-image"></div>
     </div>
@@ -376,9 +431,11 @@
     <div class="decorative-dots dot-2"></div>
     <div class="decorative-dots dot-3"></div>
   </div>
+</section>
 
-  <!-- Locations Section -->
-  <div class="storage-section" id="locations-section">
+<!-- Locations Section -->
+<section class="storage-section" id="locations-section">
+  <div class="storage-content">
     <div class="storage-header">
       <h3>Browse by Location</h3>
       <p>Select your preferred area</p>
@@ -406,9 +463,11 @@
       </div>
     </div>
   </div>
+</section>
 
-  <!-- Storage Items by Location -->
-  <div class="storage-section" id="storage-grid" style="display: none;">
+<!-- Storage Items by Location -->
+<section class="storage-section" id="storage-grid" style="display: none;">
+  <div class="storage-content">
     <div class="storage-header">
       <h3 id="location-title">Available Storage</h3>
       <button onclick="showAllLocations()" class="btn-back">← Back to Locations</button>
@@ -439,6 +498,6 @@
       <% }) %>
     </div>
   </div>
-</div>
+</section>
 
 <%- include("partials/footer") %>
