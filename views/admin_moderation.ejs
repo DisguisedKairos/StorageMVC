@@ -1,0 +1,148 @@
+<%- include("partials/header", { title: "Admin - Moderation", bodyClass: "dashboard-bg" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Moderation Queue</h3>
+    <a href="/admin/dashboard" class="btn btn-outline-primary btn-sm">Back to Dashboard</a>
+  </div>
+
+  <div class="card shadow-soft mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">KYC Requests</h5>
+        <a href="/admin/kyc" class="btn btn-sm btn-outline-secondary">View All</a>
+      </div>
+
+      <% if (!pendingKyc || pendingKyc.length === 0) { %>
+        <div class="alert alert-light mb-0">No pending KYC requests.</div>
+      <% } else { %>
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Provider</th>
+                <th>Details</th>
+                <th class="text-end">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% pendingKyc.forEach(k => { %>
+                <tr>
+                  <td>#<%= k.kyc_id %></td>
+                  <td class="fw-semibold"><%= k.name %><div class="small text-muted"><%= k.email %></div></td>
+                  <td>
+                    <div><strong>Name:</strong> <%= k.full_name %></div>
+                    <div><strong><%= k.id_type %>:</strong> <%= k.id_number %></div>
+                    <div class="small text-muted">Updated: <%= new Date(k.updated_at).toLocaleString() %></div>
+                  </td>
+                  <td class="text-end">
+                    <form method="POST" action="/admin/kyc/<%= k.kyc_id %>/approve" class="d-inline">
+                      <button class="btn btn-sm btn-success">Approve</button>
+                    </form>
+                    <form method="POST" action="/admin/kyc/<%= k.kyc_id %>/reject" class="d-inline">
+                      <button class="btn btn-sm btn-danger">Reject</button>
+                    </form>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="card shadow-soft mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Storage Listings</h5>
+        <a href="/admin/storage" class="btn btn-sm btn-outline-secondary">View All</a>
+      </div>
+
+      <% if (!storageReview || storageReview.length === 0) { %>
+        <div class="alert alert-light mb-0">No listings available.</div>
+      <% } else { %>
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Units</th>
+                <th class="text-end">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% storageReview.forEach(s => { %>
+                <tr>
+                  <td>#<%= s.storage_id %></td>
+                  <td class="fw-semibold"><%= s.title %></td>
+                  <td><%= s.location || 'N/A' %></td>
+                  <td><span class="badge bg-light text-dark"><%= s.status || 'N/A' %></span></td>
+                  <td><%= s.available_units %>/<%= s.total_units %></td>
+                  <td class="text-end">
+                    <a href="/admin/storage/edit/<%= s.storage_id %>" class="btn btn-sm btn-outline-primary">Edit</a>
+                    <a href="/admin/storage/delete/<%= s.storage_id %>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this listing?')">Delete</a>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="card shadow-soft">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Suspicious Activity (Refunds)</h5>
+        <a href="/admin/bookings" class="btn btn-sm btn-outline-secondary">View All</a>
+      </div>
+
+      <% if (!suspicious || suspicious.length === 0) { %>
+        <div class="alert alert-light mb-0">No refund activity flagged.</div>
+      <% } else { %>
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Booking</th>
+                <th>User</th>
+                <th>Storage</th>
+                <th class="text-end">Amount</th>
+                <th>Refund</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% suspicious.forEach(r => { %>
+                <tr>
+                  <td class="text-muted">#<%= r.booking_id %></td>
+                  <td>
+                    <div class="fw-semibold"><%= r.user_name || 'User' %></div>
+                    <div class="small text-muted"><%= r.user_email || '' %></div>
+                  </td>
+                  <td>
+                    <div class="fw-semibold"><%= r.title || ('Storage #' + r.storage_id) %></div>
+                    <div class="small text-muted"><%= r.location || 'N/A' %></div>
+                  </td>
+                  <td class="text-end">$<%= Number(r.amount || r.total_price || 0).toFixed(2) %></td>
+                  <td>
+                    <div class="small">Refunded: $<%= Number(r.refunded_amount || 0).toFixed(2) %></div>
+                    <div class="small text-muted"><%= r.refund_status || 'NONE' %></div>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<%- include("partials/footer") %>

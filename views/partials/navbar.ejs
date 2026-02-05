@@ -33,6 +33,7 @@
 
         <% if (user && user.role === 'admin') { %>
           <li class="nav-item"><a class="nav-link" href="/admin/dashboard">Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link" href="/admin/moderation">Moderation</a></li>
           <li class="nav-item"><a class="nav-link" href="/admin/users">Users</a></li>
           <li class="nav-item"><a class="nav-link" href="/admin/reports">Reports</a></li>
           <li class="nav-item"><a class="nav-link" href="/admin/kyc">KYC</a></li>
@@ -55,6 +56,7 @@
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
               <% if (user.role === 'admin') { %>
                 <li><a class="dropdown-item" href="/admin/dashboard">Admin Dashboard</a></li>
+                <li><a class="dropdown-item" href="/admin/moderation">Moderation Queue</a></li>
                 <li><a class="dropdown-item" href="/admin/storage">Manage Storage</a></li>
                 <li><a class="dropdown-item" href="/admin/reports">Sales Reports</a></li>
                 <li><a class="dropdown-item" href="/admin/kyc">Review KYC</a></li>

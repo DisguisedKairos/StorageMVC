@@ -62,12 +62,17 @@ module.exports = {
     },
 
     showRegister(req, res) {
-        res.render("register");
+        res.render("register", { error: null });
     },
 
     register(req, res) {
         User.createUser(req.body, (err) => {
-            if (err) throw err;
+            if (err) {
+                if (err.code === "ER_DUP_ENTRY") {
+                    return res.render("register", { error: "Email already registered. Please log in." });
+                }
+                return res.status(500).send("Database error");
+            }
             res.redirect("/login");
         });
     }

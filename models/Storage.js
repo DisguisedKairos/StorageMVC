@@ -5,7 +5,7 @@ module.exports = {
     db.query(`SELECT * FROM storage_spaces ORDER BY storage_id DESC`, callback);
   },
 
-  getFiltered: ({ q, size, location, type, priceMax }, callback) => {
+  getFiltered: ({ q, size, location, type, priceMin, priceMax, ratingMin }, callback) => {
     const where = [];
     const params = [];
 
@@ -25,9 +25,17 @@ module.exports = {
       where.push(`storage_type = ?`);
       params.push(type);
     }
+    if (priceMin) {
+      where.push(`COALESCE(price_per_day, price) >= ?`);
+      params.push(Number(priceMin) || 0);
+    }
     if (priceMax) {
       where.push(`COALESCE(price_per_day, price) <= ?`);
       params.push(Number(priceMax) || 0);
+    }
+    if (ratingMin) {
+      where.push(`COALESCE(r.avg_rating, 0) >= ?`);
+      params.push(Number(ratingMin) || 0);
     }
 
     const sql = `

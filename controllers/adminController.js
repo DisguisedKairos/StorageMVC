@@ -54,6 +54,34 @@ module.exports = {
             });
         });
     },
+
+    // ===== MODERATION QUEUE =====
+    moderationQueue: (req, res) => {
+        Kyc.listAll((errK, kycRows) => {
+            if (errK) return res.status(500).send("Database error");
+            Storage.getAll((errS, storageRows) => {
+                if (errS) return res.status(500).send("Database error");
+                Booking.getAll((errB, bookingRows) => {
+                    if (errB) return res.status(500).send("Database error");
+
+                    const pendingKyc = (kycRows || []).filter((k) => k.status === "PENDING");
+                    const storageReview = (storageRows || []).slice(0, 12);
+                    const suspicious = (bookingRows || []).filter((b) => {
+                        const refunded = Number(b.refunded_amount || 0);
+                        const status = (b.refund_status || "").toUpperCase();
+                        return refunded > 0 || (status && status !== "NONE");
+                    });
+
+                    res.render("admin_moderation", {
+                        user: req.session.user,
+                        pendingKyc,
+                        storageReview,
+                        suspicious: suspicious.slice(0, 12)
+                    });
+                });
+            });
+        });
+    },
     // ===== STORAGE MANAGEMENT =====
     showStorageList: (req, res) => {
         Storage.getAll((err, storage) => {

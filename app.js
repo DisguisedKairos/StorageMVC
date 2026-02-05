@@ -237,6 +237,15 @@ app.get("/admin/reports", (req, res) => {
   adminController.reports(req, res);
 });
 
+app.get("/admin/moderation", (req, res) => {
+  if (!req.session.user) return res.redirect("/login");
+  if (req.session.user.role !== "admin") {
+    return res.status(403).send("Not authorized");
+  }
+
+  adminController.moderationQueue(req, res);
+});
+
 /* ---------- ADMIN KYC ---------- */
 app.get("/admin/kyc", (req, res) => {
   if (!req.session.user || req.session.user.role !== "admin") {

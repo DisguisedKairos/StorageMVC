@@ -253,6 +253,10 @@
       <p class="subtitle">
         Create your account to get started
       </p>
+
+      <% if (error) { %>
+        <div class="alert alert-warning" role="alert"><%= error %></div>
+      <% } %>
       
       <form action="/register" method="POST">
         <div class="input-group-custom">

@@ -19,9 +19,12 @@ function dynamicPrice(base, available, total) {
 module.exports = {
   // Customer-facing browse page with filters
   browse: (req, res) => {
-    const { q, size, location, type, priceMax } = req.query;
+    const { q, size, location, type, priceMin, priceMax, ratingMin } = req.query;
+    const filtersApplied = [q, size, location, type, priceMin, priceMax, ratingMin].some(
+      (v) => String(v || "").trim()
+    );
 
-    Storage.getFiltered({ q, size, location, type, priceMax }, (err, results) => {
+    Storage.getFiltered({ q, size, location, type, priceMin, priceMax, ratingMin }, (err, results) => {
       if (err) return res.status(500).send("Database error");
 
       const storage = (results || []).map((s) => {
@@ -34,7 +37,16 @@ module.exports = {
 
       res.render("storage_list", {
         storage,
-        filters: { q: q || "", size: size || "", location: location || "", type: type || "", priceMax: priceMax || "" },
+        filtersApplied,
+        filters: {
+          q: q || "",
+          size: size || "",
+          location: location || "",
+          type: type || "",
+          priceMin: priceMin || "",
+          priceMax: priceMax || "",
+          ratingMin: ratingMin || "",
+        },
       });
     });
   },
