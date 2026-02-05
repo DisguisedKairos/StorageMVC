@@ -3,6 +3,7 @@ const User = require("../models/User");
 const Booking = require("../models/Booking");
 const Report = require("../models/Report");
 const Kyc = require("../models/Kyc");
+const AdminNotification = require("../models/AdminNotification");
 
 module.exports = {
     // ===== DASHBOARD =====
@@ -50,6 +51,27 @@ module.exports = {
                             topStorage: topStorage || []
                         });
                     });
+                });
+            });
+        });
+    },
+
+    // ===== NOTIFICATIONS =====
+    notifications: (req, res) => {
+        AdminNotification.listAll((err, rows) => {
+            if (err) return res.status(500).send("Database error");
+            res.render("admin_notifications", { user: req.session.user, notifications: rows || [] });
+        });
+    },
+
+    // ===== LEADERBOARDS =====
+    leaderboards: (req, res) => {
+        Report.getTopCustomers((errC, topCustomers) => {
+            Report.getTopProviders((errP, topProviders) => {
+                res.render("admin_leaderboards", {
+                    user: req.session.user,
+                    topCustomers: topCustomers || [],
+                    topProviders: topProviders || []
                 });
             });
         });

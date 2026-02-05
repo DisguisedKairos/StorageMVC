@@ -1,5 +1,6 @@
 const Storage = require("../models/Storage");
 const Kyc = require("../models/Kyc");
+const Promotion = require("../models/Promotion");
 const db = require("../config/db");
 
 function getUserId(req) {
@@ -49,7 +50,56 @@ module.exports = {
         db.query(sql, [getUserId(req)], (bErr, rows) => {
           if (bErr) return res.status(500).send("Database error");
           const summary = rows && rows[0] ? rows[0] : { total_bookings: 0, total_revenue: 0 };
-          res.render("provider_dashboard", { kyc, listings: listings || [], summary });
+          // Low occupancy alerts (high availability ratio)
+          const lowSql = `
+            SELECT storage_id, title, available_units, total_units,
+                   CASE WHEN total_units > 0 THEN (available_units / total_units) ELSE 1 END AS availability_ratio
+            FROM storage_spaces
+            WHERE provider_id = ?
+            ORDER BY availability_ratio DESC
+            LIMIT 3
+          `;
+          db.query(lowSql, [getUserId(req)], (lErr, lowRows) => {
+            if (lErr) return res.status(500).send("Database error");
+
+            // Reviews summary + trend
+            const reviewSummarySql = `
+              SELECT COALESCE(AVG(r.rating), 0) AS avg_rating, COUNT(*) AS review_count
+              FROM reviews r
+              JOIN storage_spaces s ON s.storage_id = r.storage_id
+              WHERE s.provider_id = ?
+            `;
+            db.query(reviewSummarySql, [getUserId(req)], (rErr, rRows) => {
+              if (rErr) return res.status(500).send("Database error");
+              const reviewSummary = rRows && rRows[0] ? rRows[0] : { avg_rating: 0, review_count: 0 };
+
+              const reviewTrendSql = `
+                SELECT DATE_FORMAT(r.created_at, '%Y-%m') AS month, AVG(r.rating) AS avg_rating, COUNT(*) AS reviews
+                FROM reviews r
+                JOIN storage_spaces s ON s.storage_id = r.storage_id
+                WHERE s.provider_id = ?
+                GROUP BY DATE_FORMAT(r.created_at, '%Y-%m')
+                ORDER BY month DESC
+                LIMIT 6
+              `;
+              db.query(reviewTrendSql, [getUserId(req)], (tErr, trendRows) => {
+                if (tErr) return res.status(500).send("Database error");
+
+                Promotion.countActiveByProvider(getUserId(req), (pErr, promoCount) => {
+                  if (pErr) return res.status(500).send("Database error");
+                  res.render("provider_dashboard", {
+                    kyc,
+                    listings: listings || [],
+                    summary,
+                    lowOccupancy: lowRows || [],
+                    reviewSummary,
+                    reviewTrend: trendRows || [],
+                    activePromos: promoCount || 0
+                  });
+                });
+              });
+            });
+          });
         });
       });
     });
@@ -223,5 +273,56 @@ module.exports = {
       if (err) return res.status(500).send("Database error");
       res.render("provider_bookings", { bookings: rows || [] });
     });
+  },
+
+  calendar: (req, res) => {
+    const guard = requireProvider(req, res);
+    if (guard) return;
+
+    const sql = `
+      SELECT b.booking_id, b.start_date, b.end_date, b.status,
+             s.title AS storage_title, u.name AS customer_name
+      FROM bookings b
+      JOIN storage_spaces s ON s.storage_id = b.storage_id
+      JOIN users u ON u.user_id = b.user_id
+      WHERE s.provider_id = ?
+      ORDER BY b.start_date ASC
+    `;
+    db.query(sql, [getUserId(req)], (err, rows) => {
+      if (err) return res.status(500).send("Database error");
+      res.render("provider_calendar", { bookings: rows || [] });
+    });
+  },
+
+  promotions: (req, res) => {
+    const guard = requireProvider(req, res);
+    if (guard) return;
+
+    Promotion.listByProvider(getUserId(req), (err, promos) => {
+      if (err) return res.status(500).send("Database error");
+      res.render("provider_promotions", { promotions: promos || [] });
+    });
+  },
+
+  createPromotion: (req, res) => {
+    const guard = requireProvider(req, res);
+    if (guard) return;
+
+    const code = (req.body.code || "").trim().toUpperCase();
+    const discount = Math.max(0, Math.min(100, Number(req.body.discount_percent) || 0));
+    const start_date = req.body.start_date || null;
+    const end_date = req.body.end_date || null;
+
+    if (!code || discount <= 0) {
+      return res.redirect("/provider/promotions");
+    }
+
+    Promotion.create(
+      { providerId: getUserId(req), code, discount_percent: discount, start_date, end_date },
+      (err) => {
+        if (err) return res.status(500).send("Database error");
+        res.redirect("/provider/promotions");
+      }
+    );
   },
 };

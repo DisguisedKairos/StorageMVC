@@ -105,3 +105,49 @@ CREATE TABLE IF NOT EXISTS booking_loyalty (
 -- 10) Create indexes for loyalty performance
 CREATE INDEX idx_loyalty_tier_points ON loyalty_tiers (min_points, max_points);
 CREATE INDEX idx_booking_loyalty_user ON booking_loyalty (user_id);
+
+/* ========================================
+   PROVIDER MARKETING + COMPLAINTS + NOTIFICATIONS
+   ======================================== */
+
+-- Promotions / discounts
+CREATE TABLE IF NOT EXISTS provider_promotions (
+  promo_id INT AUTO_INCREMENT PRIMARY KEY,
+  provider_id INT NOT NULL,
+  code VARCHAR(40) NOT NULL,
+  discount_percent DECIMAL(5,2) NOT NULL DEFAULT 0,
+  start_date DATE NULL,
+  end_date DATE NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_promo_provider (provider_id),
+  KEY idx_promo_status (status)
+);
+
+-- Customer complaints on listings
+CREATE TABLE IF NOT EXISTS complaints (
+  complaint_id INT AUTO_INCREMENT PRIMARY KEY,
+  storage_id INT NOT NULL,
+  provider_id INT NOT NULL,
+  customer_id INT NOT NULL,
+  title VARCHAR(120) NOT NULL,
+  description TEXT NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'OPEN',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_complaint_provider (provider_id),
+  KEY idx_complaint_storage (storage_id),
+  KEY idx_complaint_created (created_at)
+);
+
+-- Admin notifications (e.g., complaint threshold)
+CREATE TABLE IF NOT EXISTS admin_notifications (
+  notification_id INT AUTO_INCREMENT PRIMARY KEY,
+  provider_id INT NULL,
+  type VARCHAR(50) NOT NULL,
+  message VARCHAR(255) NOT NULL,
+  is_read TINYINT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_admin_notif_created (created_at),
+  KEY idx_admin_notif_provider (provider_id),
+  KEY idx_admin_notif_type (type)
+);
