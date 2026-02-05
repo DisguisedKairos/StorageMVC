@@ -98,6 +98,19 @@
             </div>
             <button class="btn btn-dark w-100">Submit</button>
           </form>
+          <hr class="my-4">
+          <h6 class="mb-2">Report an issue</h6>
+          <form method="POST" action="/storage/<%= storage.storage_id %>/complaint">
+            <div class="mb-2">
+              <label class="form-label">Title</label>
+              <input name="title" class="form-control" placeholder="Describe the issue" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Details</label>
+              <textarea name="description" class="form-control" rows="3" placeholder="Explain what happened..." required></textarea>
+            </div>
+            <button class="btn btn-outline-danger w-100">Submit Complaint</button>
+          </form>
         <% } else { %>
           <div class="alert alert-light mb-0">Login as a customer to leave a review.</div>
         <% } %>

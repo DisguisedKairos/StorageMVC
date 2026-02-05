@@ -1,0 +1,451 @@
+<%- include("partials/header", { title: "Admin Leaderboards" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<style>
+  :root {
+    --lb-bg: #fff6f1;
+    --lb-bg-2: #ffe2cc;
+    --lb-card: #ffffff;
+    --lb-ink: #2b2430;
+    --lb-ink-soft: #6b5c66;
+    --lb-accent: #ff8a5b;
+    --lb-accent-2: #ffb76b;
+    --lb-gold: #f6c24a;
+    --lb-silver: #cfd6df;
+    --lb-bronze: #d49b6a;
+    --lb-dark: #1f1f24;
+    --lb-dark-2: #2b2b33;
+  }
+
+  body.dark-mode .lb-shell {
+    --lb-bg: #1f1f24;
+    --lb-bg-2: #2b2b33;
+    --lb-card: #24242b;
+    --lb-ink: #f5f3f7;
+    --lb-ink-soft: #b0a6b3;
+    --lb-accent: #f6c24a;
+    --lb-accent-2: #ff8a5b;
+  }
+
+  .lb-shell {
+    background: radial-gradient(140% 140% at 0% 0%, var(--lb-bg-2) 0%, var(--lb-bg) 55%, #ffffff 100%);
+    border-radius: 24px;
+    padding: 22px;
+    border: 1px solid rgba(0,0,0,0.06);
+    position: relative;
+    overflow: hidden;
+  }
+  body.dark-mode .lb-shell {
+    background: radial-gradient(140% 140% at 0% 0%, #2c2b33 0%, #1f1f24 60%, #1b1b20 100%);
+    border-color: rgba(255,255,255,0.08);
+  }
+
+  .lb-shell::after {
+    content: "";
+    position: absolute;
+    inset: auto -40px -40px auto;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(255,183,107,0.35) 0%, rgba(255,138,91,0) 70%);
+    filter: blur(2px);
+    pointer-events: none;
+  }
+
+  .lb-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+    position: relative;
+    z-index: 1;
+  }
+  .lb-title {
+    color: var(--lb-ink);
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+  }
+  .lb-subtitle {
+    color: var(--lb-ink-soft);
+    font-size: 0.92rem;
+  }
+
+  .lb-tabs {
+    display: inline-flex;
+    background: rgba(255,255,255,0.6);
+    padding: 4px;
+    border-radius: 999px;
+    gap: 6px;
+    border: 1px solid rgba(0,0,0,0.06);
+  }
+  body.dark-mode .lb-tabs {
+    background: rgba(31,31,36,0.85);
+    border-color: rgba(255,255,255,0.08);
+  }
+  .lb-tab {
+    border: 0;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--lb-ink-soft);
+    background: transparent;
+    cursor: pointer;
+  }
+  .lb-tab.active {
+    background: linear-gradient(135deg, var(--lb-accent) 0%, var(--lb-accent-2) 100%);
+    color: #1f1f24;
+    box-shadow: 0 8px 20px rgba(255,138,91,0.35);
+  }
+  body.dark-mode .lb-tab.active {
+    color: #1f1f24;
+  }
+  body.dark-mode .lb-tab {
+    color: #d2c8d4;
+  }
+  .lb-back {
+    border-color: rgba(255,138,91,0.6);
+    color: var(--lb-ink);
+  }
+  body.dark-mode .lb-back {
+    color: #f5f3f7;
+    border-color: rgba(246,194,74,0.6);
+  }
+  body.dark-mode .lb-back:hover {
+    background: rgba(246,194,74,0.15);
+  }
+
+  .lb-grid {
+    display: grid;
+    gap: 18px;
+  }
+  @media (min-width: 992px) {
+    .lb-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .lb-section {
+    background: var(--lb-card);
+    border-radius: 18px;
+    padding: 16px;
+    border: 1px solid rgba(0,0,0,0.06);
+    box-shadow: 0 16px 30px rgba(23, 18, 29, 0.08);
+  }
+  body.dark-mode .lb-section {
+    border-color: rgba(255,255,255,0.08);
+    box-shadow: 0 16px 30px rgba(0, 0, 0, 0.4);
+  }
+
+  .podium {
+    display: grid;
+    grid-template-columns: 1fr 1.15fr 1fr;
+    gap: 10px;
+    align-items: end;
+  }
+  .podium-card {
+    background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.85) 100%);
+    border-radius: 16px;
+    padding: 14px;
+    border: 1px solid rgba(0,0,0,0.06);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(12px);
+    animation: lb-rise 0.7s ease forwards;
+  }
+  body.dark-mode .podium-card {
+    background: linear-gradient(180deg, rgba(36,36,43,0.95) 0%, rgba(36,36,43,0.9) 100%);
+    border-color: rgba(255,255,255,0.08);
+  }
+  .podium-card.center {
+    border: 1px solid rgba(246,194,74,0.5);
+    box-shadow: 0 14px 30px rgba(246,194,74,0.25);
+  }
+
+  .podium-rank {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--lb-ink-soft);
+    margin-bottom: 6px;
+  }
+
+  .avatar-ring {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    margin: 6px auto 8px;
+    padding: 3px;
+    background: conic-gradient(from 90deg, var(--lb-accent), var(--lb-accent-2), var(--lb-accent));
+    animation: lb-spin 8s linear infinite;
+  }
+  .avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fff 0%, #f6efe8 100%);
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    color: var(--lb-ink);
+  }
+  body.dark-mode .avatar {
+    background: linear-gradient(135deg, #2f2f38 0%, #24242b 100%);
+    color: #f7f7fb;
+  }
+
+  .podium-name {
+    font-weight: 700;
+    color: var(--lb-ink);
+  }
+  .podium-value {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--lb-accent);
+  }
+  .podium-meta {
+    font-size: 12px;
+    color: var(--lb-ink-soft);
+  }
+
+  .list-card {
+    margin-top: 12px;
+    display: grid;
+    gap: 8px;
+  }
+  .list-row {
+    display: grid;
+    grid-template-columns: 36px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.65);
+    border: 1px solid rgba(0,0,0,0.04);
+    opacity: 0;
+    transform: translateY(10px);
+    animation: lb-fade 0.6s ease forwards;
+  }
+  body.dark-mode .list-row {
+    background: rgba(42,42,50,0.9);
+    border-color: rgba(255,255,255,0.08);
+  }
+  .list-row:hover {
+    transform: translateY(0) scale(1.01);
+  }
+  .rank-badge {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #1f1f24;
+    background: linear-gradient(135deg, var(--lb-accent) 0%, var(--lb-accent-2) 100%);
+  }
+  .meta {
+    font-size: 12px;
+    color: var(--lb-ink-soft);
+  }
+  .value-chip {
+    font-weight: 700;
+    color: var(--lb-ink);
+    background: rgba(255,183,107,0.2);
+    border: 1px solid rgba(255,138,91,0.35);
+    padding: 6px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .pill {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(255,138,91,0.15);
+    color: var(--lb-ink);
+    font-weight: 600;
+  }
+  body.dark-mode .pill {
+    color: #f6c24a;
+    background: rgba(246,194,74,0.2);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 20px;
+    border-radius: 14px;
+    border: 1px dashed rgba(0,0,0,0.1);
+    color: var(--lb-ink-soft);
+  }
+
+  @keyframes lb-rise {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes lb-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  @keyframes lb-fade {
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+
+<div class="container container-max py-5">
+  <div class="lb-shell mb-4">
+    <div class="lb-header">
+      <div>
+        <h3 class="lb-title">Leaderboards</h3>
+        <div class="lb-subtitle">Best buyers and top sellers, updated in real time.</div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <div class="lb-tabs">
+          <button class="lb-tab active" type="button" data-range="today">Today</button>
+          <button class="lb-tab" type="button" data-range="week">Week</button>
+        </div>
+        <a href="/admin/dashboard" class="btn btn-outline-primary btn-sm lb-back">Back</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="lb-grid">
+    <section class="lb-section">
+      <div class="section-title">
+        <h5 class="mb-0">Top Customers</h5>
+        <span class="pill">Best Buyers</span>
+      </div>
+
+      <% const c0 = (topCustomers || [])[0]; %>
+      <% const c1 = (topCustomers || [])[1]; %>
+      <% const c2 = (topCustomers || [])[2]; %>
+
+      <% if (!topCustomers || topCustomers.length === 0) { %>
+        <div class="empty-state">No customer data yet.</div>
+      <% } else { %>
+        <div class="podium mb-3">
+          <div class="podium-card" style="animation-delay: 0.1s;">
+            <div class="podium-rank">#2 Silver</div>
+            <div class="avatar-ring"><div class="avatar"><%= c1 ? (c1.name || "U").trim().charAt(0).toUpperCase() : "—" %></div></div>
+            <div class="podium-name"><%= c1 ? (c1.name || ("User #" + c1.user_id)) : "—" %></div>
+            <div class="podium-meta"><%= c1 ? (c1.email || "N/A") : "N/A" %></div>
+            <div class="podium-value">$<%= Number(c1?.spend || 0).toFixed(2) %></div>
+            <div class="podium-meta"><%= Number(c1?.bookings || 0) %> bookings</div>
+          </div>
+          <div class="podium-card center" style="animation-delay: 0.05s;">
+            <div class="podium-rank">#1 Gold</div>
+            <div class="avatar-ring"><div class="avatar"><%= c0 ? (c0.name || "U").trim().charAt(0).toUpperCase() : "—" %></div></div>
+            <div class="podium-name"><%= c0 ? (c0.name || ("User #" + c0.user_id)) : "—" %></div>
+            <div class="podium-meta"><%= c0 ? (c0.email || "N/A") : "N/A" %></div>
+            <div class="podium-value">$<%= Number(c0?.spend || 0).toFixed(2) %></div>
+            <div class="podium-meta"><%= Number(c0?.bookings || 0) %> bookings</div>
+          </div>
+          <div class="podium-card" style="animation-delay: 0.15s;">
+            <div class="podium-rank">#3 Bronze</div>
+            <div class="avatar-ring"><div class="avatar"><%= c2 ? (c2.name || "U").trim().charAt(0).toUpperCase() : "—" %></div></div>
+            <div class="podium-name"><%= c2 ? (c2.name || ("User #" + c2.user_id)) : "—" %></div>
+            <div class="podium-meta"><%= c2 ? (c2.email || "N/A") : "N/A" %></div>
+            <div class="podium-value">$<%= Number(c2?.spend || 0).toFixed(2) %></div>
+            <div class="podium-meta"><%= Number(c2?.bookings || 0) %> bookings</div>
+          </div>
+        </div>
+
+        <div class="list-card">
+          <% topCustomers.forEach((r, idx) => { %>
+            <div class="list-row" style="animation-delay: <%= 0.04 * idx %>s;">
+              <div class="rank-badge"><%= idx + 1 %></div>
+              <div>
+                <div class="fw-semibold"><%= r.name || ("User #" + r.user_id) %></div>
+                <div class="meta"><%= r.email || "N/A" %> • <%= Number(r.bookings || 0) %> bookings</div>
+              </div>
+              <div class="value-chip">$<%= Number(r.spend || 0).toFixed(2) %></div>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
+
+    <section class="lb-section">
+      <div class="section-title">
+        <h5 class="mb-0">Top Providers</h5>
+        <span class="pill">Best Sellers</span>
+      </div>
+
+      <% const p0 = (topProviders || [])[0]; %>
+      <% const p1 = (topProviders || [])[1]; %>
+      <% const p2 = (topProviders || [])[2]; %>
+
+      <% if (!topProviders || topProviders.length === 0) { %>
+        <div class="empty-state">No provider data yet.</div>
+      <% } else { %>
+        <div class="podium mb-3">
+          <div class="podium-card" style="animation-delay: 0.1s;">
+            <div class="podium-rank">#2 Silver</div>
+            <div class="avatar-ring"><div class="avatar"><%= p1 ? (p1.name || "U").trim().charAt(0).toUpperCase() : "—" %></div></div>
+            <div class="podium-name"><%= p1 ? (p1.name || ("User #" + p1.user_id)) : "—" %></div>
+            <div class="podium-meta"><%= p1 ? (p1.email || "N/A") : "N/A" %></div>
+            <div class="podium-value">$<%= Number(p1?.revenue || 0).toFixed(2) %></div>
+            <div class="podium-meta"><%= Number(p1?.bookings || 0) %> bookings • <%= Number(p1?.listings || 0) %> listings</div>
+          </div>
+          <div class="podium-card center" style="animation-delay: 0.05s;">
+            <div class="podium-rank">#1 Gold</div>
+            <div class="avatar-ring"><div class="avatar"><%= p0 ? (p0.name || "U").trim().charAt(0).toUpperCase() : "—" %></div></div>
+            <div class="podium-name"><%= p0 ? (p0.name || ("User #" + p0.user_id)) : "—" %></div>
+            <div class="podium-meta"><%= p0 ? (p0.email || "N/A") : "N/A" %></div>
+            <div class="podium-value">$<%= Number(p0?.revenue || 0).toFixed(2) %></div>
+            <div class="podium-meta"><%= Number(p0?.bookings || 0) %> bookings • <%= Number(p0?.listings || 0) %> listings</div>
+          </div>
+          <div class="podium-card" style="animation-delay: 0.15s;">
+            <div class="podium-rank">#3 Bronze</div>
+            <div class="avatar-ring"><div class="avatar"><%= p2 ? (p2.name || "U").trim().charAt(0).toUpperCase() : "—" %></div></div>
+            <div class="podium-name"><%= p2 ? (p2.name || ("User #" + p2.user_id)) : "—" %></div>
+            <div class="podium-meta"><%= p2 ? (p2.email || "N/A") : "N/A" %></div>
+            <div class="podium-value">$<%= Number(p2?.revenue || 0).toFixed(2) %></div>
+            <div class="podium-meta"><%= Number(p2?.bookings || 0) %> bookings • <%= Number(p2?.listings || 0) %> listings</div>
+          </div>
+        </div>
+
+        <div class="list-card">
+          <% topProviders.forEach((r, idx) => { %>
+            <div class="list-row" style="animation-delay: <%= 0.04 * idx %>s;">
+              <div class="rank-badge"><%= idx + 1 %></div>
+              <div>
+                <div class="fw-semibold"><%= r.name || ("User #" + r.user_id) %></div>
+                <div class="meta"><%= r.email || "N/A" %> • <%= Number(r.listings || 0) %> listings • <%= Number(r.bookings || 0) %> bookings</div>
+              </div>
+              <div class="value-chip">$<%= Number(r.revenue || 0).toFixed(2) %></div>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll(".list-row").forEach((row) => {
+    row.style.opacity = "1";
+  });
+
+  // Toggle active tab UI (data filtering can be wired later)
+  const tabs = document.querySelectorAll(".lb-tab");
+  tabs.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      tabs.forEach((t) => t.classList.remove("active"));
+      btn.classList.add("active");
+    });
+  });
+</script>
+
+<%- include("partials/footer") %>

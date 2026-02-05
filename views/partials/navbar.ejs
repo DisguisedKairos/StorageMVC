@@ -35,6 +35,8 @@
           <li class="nav-item"><a class="nav-link" href="/admin/dashboard">Dashboard</a></li>
           <li class="nav-item"><a class="nav-link" href="/admin/users">Users</a></li>
           <li class="nav-item"><a class="nav-link" href="/admin/reports">Reports</a></li>
+          <li class="nav-item"><a class="nav-link" href="/admin/leaderboards">Leaderboards</a></li>
+          <li class="nav-item"><a class="nav-link" href="/admin/notifications">Notifications</a></li>
           <li class="nav-item"><a class="nav-link" href="/admin/kyc">KYC</a></li>
         <% } %>
 
@@ -42,6 +44,7 @@
           <li class="nav-item"><a class="nav-link" href="/provider/dashboard">Dashboard</a></li>
           <li class="nav-item"><a class="nav-link" href="/provider/storage">My Storage</a></li>
           <li class="nav-item"><a class="nav-link" href="/provider/bookings">Bookings</a></li>
+          <li class="nav-item"><a class="nav-link" href="/provider/calendar">&#128197; Calendar</a></li>
           <li class="nav-item"><a class="nav-link" href="/provider/kyc">KYC</a></li>
         <% } %>
 
@@ -57,11 +60,14 @@
                 <li><a class="dropdown-item" href="/admin/dashboard">Admin Dashboard</a></li>
                 <li><a class="dropdown-item" href="/admin/storage">Manage Storage</a></li>
                 <li><a class="dropdown-item" href="/admin/reports">Sales Reports</a></li>
+                <li><a class="dropdown-item" href="/admin/leaderboards">Leaderboards</a></li>
+                <li><a class="dropdown-item" href="/admin/notifications">Notifications</a></li>
                 <li><a class="dropdown-item" href="/admin/kyc">Review KYC</a></li>
               <% } else if (user.role === 'provider') { %>
                 <li><a class="dropdown-item" href="/provider/dashboard">Provider Dashboard</a></li>
                 <li><a class="dropdown-item" href="/provider/storage">Manage Storage</a></li>
                 <li><a class="dropdown-item" href="/provider/bookings">View Bookings</a></li>
+                <li><a class="dropdown-item" href="/provider/calendar">Calendar</a></li>
                 <li><a class="dropdown-item" href="/provider/kyc">KYC Verification</a></li>
               <% } else { %>
                 <li><a class="dropdown-item" href="/customer/dashboard">Dashboard</a></li>

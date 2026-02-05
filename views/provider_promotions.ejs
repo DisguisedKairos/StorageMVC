@@ -1,0 +1,79 @@
+<%- include("partials/header", { title: "Provider Promotions" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h3 class="mb-1">Promotions & Discounts</h3>
+      <div class="small-muted">Create promo codes to boost bookings.</div>
+    </div>
+    <a class="btn btn-outline-dark btn-sm" href="/provider/dashboard">Back to Dashboard</a>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-5">
+      <div class="card shadow-soft p-4">
+        <h6 class="mb-3">Create new promotion</h6>
+        <form method="POST" action="/provider/promotions" class="d-grid gap-2">
+          <div>
+            <label class="form-label">Promo Code</label>
+            <input class="form-control" name="code" placeholder="SAVE10" required>
+          </div>
+          <div>
+            <label class="form-label">Discount (%)</label>
+            <input class="form-control" name="discount_percent" type="number" min="1" max="100" step="1" required>
+          </div>
+          <div class="row g-2">
+            <div class="col">
+              <label class="form-label">Start Date</label>
+              <input class="form-control" type="date" name="start_date">
+            </div>
+            <div class="col">
+              <label class="form-label">End Date</label>
+              <input class="form-control" type="date" name="end_date">
+            </div>
+          </div>
+          <button class="btn btn-primary mt-2">Create Promotion</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="col-lg-7">
+      <div class="card shadow-soft p-4">
+        <h6 class="mb-3">Your promotions</h6>
+        <% if (!promotions || promotions.length === 0) { %>
+          <div class="alert alert-light mb-0">No promotions yet.</div>
+        <% } else { %>
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Discount</th>
+                  <th>Dates</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% promotions.forEach(p => { %>
+                  <tr>
+                    <td class="fw-semibold"><%= p.code %></td>
+                    <td><%= Number(p.discount_percent || 0) %>%</td>
+                    <td>
+                      <%= p.start_date ? new Date(p.start_date).toLocaleDateString() : "Anytime" %>
+                      -
+                      <%= p.end_date ? new Date(p.end_date).toLocaleDateString() : "Open" %>
+                    </td>
+                    <td><span class="badge bg-dark"><%= p.status %></span></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include("partials/footer") %>
