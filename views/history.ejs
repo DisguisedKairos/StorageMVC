@@ -52,6 +52,9 @@
                   <% if (r.viewLink) { %>
                     <a href="<%= r.viewLink %>" class="btn btn-sm btn-outline-secondary">View</a>
                   <% } %>
+                  <% if (r.storageId) { %>
+                    <a href="/storage/<%= r.storageId %>" class="btn btn-sm btn-outline-danger ms-2">Report</a>
+                  <% } %>
                 </td>
               </tr>
             <% }) %>

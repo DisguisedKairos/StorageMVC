@@ -1,5 +1,7 @@
 const Storage = require("../models/Storage");
 const Review = require("../models/Review");
+const Complaint = require("../models/Complaint");
+const AdminNotification = require("../models/AdminNotification");
 
 function getUserId(req) {
   return (req.session?.user?.id || req.session?.user?.user_id);
@@ -85,6 +87,49 @@ module.exports = {
 
     Review.create({ storageId, userId: getUserId(req), rating, comment }, () => {
       return res.redirect(`/storage/${storageId}`);
+    });
+  },
+
+  addComplaint: (req, res) => {
+    if (!req.session.user) return res.redirect("/login");
+    if (req.session.user.role !== "customer") return res.status(403).send("Not authorized");
+
+    const storageId = parseInt(req.params.id, 10);
+    const title = (req.body.title || "").trim();
+    const description = (req.body.description || "").trim();
+    if (!storageId || !title || !description) return res.redirect(`/storage/${storageId}`);
+
+    Storage.findById(storageId, (err, rows) => {
+      if (err) return res.status(500).send("Database error");
+      const storage = rows && rows[0];
+      if (!storage) return res.status(404).send("Storage not found");
+
+      const providerId = storage.provider_id;
+      Complaint.create(
+        { storageId, providerId, customerId: getUserId(req), title, description },
+        (cErr) => {
+          if (cErr) return res.status(500).send("Database error");
+
+          Complaint.countProviderMonth(providerId, (cntErr, total) => {
+            if (cntErr) return res.redirect(`/storage/${storageId}`);
+
+            if (total > 10) {
+              AdminNotification.existsThisMonth({ providerId, type: "complaint_threshold" }, (eErr, exists) => {
+                if (!eErr && !exists) {
+                  const message = `Provider #${providerId} exceeded 10 complaints this month (${total}).`;
+                  AdminNotification.create({ providerId, type: "complaint_threshold", message }, () => {
+                    return res.redirect(`/storage/${storageId}`);
+                  });
+                } else {
+                  return res.redirect(`/storage/${storageId}`);
+                }
+              });
+            } else {
+              return res.redirect(`/storage/${storageId}`);
+            }
+          });
+        }
+      );
     });
   },
 };
