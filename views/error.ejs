@@ -1,0 +1,22 @@
+<%- include("partials/header", { title: "Error" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="alert alert-danger" role="alert">
+        <h4 class="alert-heading">⚠️ Oops, Something Went Wrong</h4>
+        <p class="mb-2"><%= message || "An unexpected error occurred. Please try again later." %></p>
+        <hr>
+        <a href="javascript:history.back()" class="btn btn-outline-danger btn-sm">
+          ← Go Back
+        </a>
+        <a href="/" class="btn btn-outline-primary btn-sm">
+          Return to Home
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include("partials/footer") %>
