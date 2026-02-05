@@ -1,0 +1,42 @@
+<%- include("partials/header", { title: "Provider Bookings" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Customer Bookings</h3>
+    <a class="btn btn-outline-dark" href="/provider/storage">My Listings</a>
+  </div>
+
+  <% if (!bookings || bookings.length === 0) { %>
+    <div class="alert alert-light">No bookings yet.</div>
+  <% } else { %>
+    <div class="table-responsive card shadow-soft p-3">
+      <table class="table align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Booking</th>
+            <th>Listing</th>
+            <th>Customer</th>
+            <th>Dates</th>
+            <th>Total</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% bookings.forEach(b => { %>
+            <tr>
+              <td>#<%= b.booking_id %></td>
+              <td class="fw-semibold"><%= b.title %> <div class="small-muted"><%= b.location || '' %></div></td>
+              <td><%= b.customer_name %><div class="small-muted"><%= b.customer_email %></div></td>
+              <td><%= b.start_date %> → <%= b.end_date %></td>
+              <td>$<%= Number(b.total_price || 0).toFixed(2) %></td>
+              <td><span class="badge bg-dark"><%= b.status %></span></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<%- include("partials/footer") %>

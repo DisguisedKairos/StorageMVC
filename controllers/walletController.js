@@ -27,10 +27,19 @@ module.exports = {
       WalletTransaction.getByUser(userId, (errTx, transactions) => {
         if (errTx) transactions = [];
 
+        const formattedTransactions = (transactions || []).map((tx) => {
+          const date = new Date(tx.created_at);
+          const sgtDateTime = date.toLocaleString('en-SG', { timeZone: 'Asia/Singapore' });
+          return {
+            ...tx,
+            created_at_display: sgtDateTime
+          };
+        });
+
         res.render("wallet_dashboard", {
           user: req.session.user,
           balance: Number(balance) || 0,
-          transactions: transactions || []
+          transactions: formattedTransactions || []
         });
       });
     });
@@ -356,13 +365,19 @@ module.exports = {
       WalletTransaction.getByUser(userId, (errTx, transactions) => {
         if (errTx) transactions = [];
 
-        const formattedTransactions = (transactions || []).map((tx) => ({
-          ...tx,
-          amount_display: Math.abs(Number(tx.amount) || 0).toFixed(2),
-          type_display: tx.type === "topup" ? "Top-up" : tx.type === "purchase" ? "Purchase" : "Refund",
-          sign: tx.type === "purchase" ? "-" : "+",
-          created_at_display: new Date(tx.created_at).toLocaleDateString("en-SG")
-        }));
+        const formattedTransactions = (transactions || []).map((tx) => {
+          const date = new Date(tx.created_at);
+          const sgtDate = date.toLocaleDateString('en-SG', { timeZone: 'Asia/Singapore' });
+          const sgtTime = date.toLocaleTimeString('en-SG', { timeZone: 'Asia/Singapore' });
+          return {
+            ...tx,
+            amount_display: Math.abs(Number(tx.amount) || 0).toFixed(2),
+            type_display: tx.type === "topup" ? "Top-up" : tx.type === "purchase" ? "Purchase" : "Refund",
+            sign: tx.type === "purchase" ? "-" : "+",
+            created_at_display: sgtDate,
+            created_at_time: sgtTime
+          };
+        });
 
         res.render("wallet_history", {
           user: req.session.user,

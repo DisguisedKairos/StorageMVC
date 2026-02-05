@@ -51,6 +51,7 @@ const customerController = require("./controllers/customerController");
 const cartController = require("./controllers/cartController");
 const invoiceController = require("./controllers/invoiceController");
 const walletController = require("./controllers/walletController");
+const providerController = require("./controllers/providerController");
 
 /* ======================
    ROUTES
@@ -65,9 +66,9 @@ WalletTransaction.initializeTables(() => {
 // HOME / LOGIN REDIRECT
 app.get("/", (req, res) => {
   if (req.session.user) {
-    return req.session.user.role === "admin"
-      ? res.redirect("/admin/dashboard")
-      : res.redirect("/customer/dashboard");
+    if (req.session.user.role === "admin") return res.redirect("/admin/dashboard");
+    if (req.session.user.role === "provider") return res.redirect("/provider/dashboard");
+    return res.redirect("/customer/dashboard");
   }
   res.render("login");
 });
@@ -88,6 +89,20 @@ app.get("/logout", (req, res) => {
 /* ---------- CUSTOMER ---------- */
 app.get("/customer/dashboard", customerController.dashboard);
 app.get("/storage", storageController.browse);
+app.get("/storage/:id", storageController.detail);
+app.post("/storage/:id/review", storageController.addReview);
+
+/* ---------- PROVIDER ---------- */
+app.get("/provider/dashboard", providerController.dashboard);
+app.get("/provider/kyc", providerController.showKycForm);
+app.post("/provider/kyc", providerController.submitKyc);
+app.get("/provider/storage", providerController.listStorage);
+app.get("/provider/storage/add", providerController.showAddStorage);
+app.post("/provider/storage/add", providerController.addStorage);
+app.get("/provider/storage/edit/:id", providerController.showEditStorage);
+app.post("/provider/storage/edit/:id", providerController.updateStorage);
+app.get("/provider/storage/delete/:id", providerController.deleteStorage);
+app.get("/provider/bookings", providerController.listBookings);
 
 /* ---------- CART ---------- */
 app.get("/cart", cartController.viewCart);
@@ -194,6 +209,26 @@ app.get("/admin/reports", (req, res) => {
   }
 
   adminController.reports(req, res);
+});
+
+/* ---------- ADMIN KYC ---------- */
+app.get("/admin/kyc", (req, res) => {
+  if (!req.session.user || req.session.user.role !== "admin") {
+    return res.status(403).send("Not authorized");
+  }
+  return adminController.showKycList(req, res);
+});
+app.post("/admin/kyc/:id/approve", (req, res) => {
+  if (!req.session.user || req.session.user.role !== "admin") {
+    return res.status(403).send("Not authorized");
+  }
+  return adminController.approveKyc(req, res);
+});
+app.post("/admin/kyc/:id/reject", (req, res) => {
+  if (!req.session.user || req.session.user.role !== "admin") {
+    return res.status(403).send("Not authorized");
+  }
+  return adminController.rejectKyc(req, res);
 });
 
 /* ---------- ADMIN USERS ---------- */

@@ -1,8 +1,9 @@
 <nav class="navbar navbar-expand-lg" style="background: linear-gradient(135deg, #2F6B6A 0%, #3D7675 100%); box-shadow: 0 4px 15px rgba(47, 107, 106, 0.25);">
   <div class="container container-max">
-    <a class="navbar-brand nav-brand" href="/" style="color: #ffffff !important; font-weight: 700; font-size: 24px; letter-spacing: 1px;">KeepIT</a>
+    <a class="navbar-brand" href="/">KeepIT</a>
 
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu" style="border-color: rgba(255,255,255,0.5);">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu"
+      aria-controls="navMenu" aria-expanded="false" aria-label="Toggle navigation" style="border-color: rgba(255,255,255,0.5);">
       <span class="navbar-toggler-icon" style="background-image: url('data:image/svg+xml,%3csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 30 30%22%3e%3cpath stroke=%22rgba(255,255,255,0.8)%22 stroke-linecap=%22round%22 stroke-miterlimit=%2210%22 stroke-width=%222%22 d=%22M4 7h22M4 15h22M4 23h22%22/%3e%3c/svg%3e');"></span>
     </button>
 
@@ -10,49 +11,52 @@
       <ul class="navbar-nav ms-auto align-items-center gap-2">
 
         <li class="nav-item">
-          <a class="nav-link text-white" href="/storage">Browse</a>
+          <a class="nav-link" href="/storage">Browse</a>
         </li>
 
         <% if (user && user.role === 'customer') { %>
+          <li class="nav-item"><a class="nav-link" href="/cart">Cart</a></li>
+          <li class="nav-item"><a class="nav-link" href="/history">History</a></li>
+          <li class="nav-item"><a class="nav-link" href="/wallet">💳 Wallet</a></li>
           <li class="nav-item">
-            <a class="nav-link text-white" href="/cart">Cart</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link text-white" href="/history">History</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link text-white" href="/wallet">💳 Wallet</a>
-          </li>
-          <li class="nav-item">
-            <span class="nav-link text-white-50" style="font-size: 14px;">
-              Balance: <strong class="text-white">${<%= Number(user.walletBalance || user.wallet_balance || 0).toFixed(2) %></strong>
+            <span class="navbar-text">
+              Balance: <strong>$<%= Number(user.walletBalance || user.wallet_balance || 0).toFixed(2) %></strong>
             </span>
           </li>
         <% } %>
 
         <% if (user && user.role === 'admin') { %>
-          <li class="nav-item">
-            <a class="nav-link text-white" href="/admin/dashboard">Dashboard</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link text-white" href="/admin/users">Users</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link text-white" href="/admin/reports">Reports</a>
-          </li>
+          <li class="nav-item"><a class="nav-link" href="/admin/dashboard">Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link" href="/admin/users">Users</a></li>
+          <li class="nav-item"><a class="nav-link" href="/admin/reports">Reports</a></li>
+          <li class="nav-item"><a class="nav-link" href="/admin/kyc">KYC</a></li>
+        <% } %>
+
+        <% if (user && user.role === 'provider') { %>
+          <li class="nav-item"><a class="nav-link" href="/provider/dashboard">Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link" href="/provider/storage">My Storage</a></li>
+          <li class="nav-item"><a class="nav-link" href="/provider/bookings">Bookings</a></li>
+          <li class="nav-item"><a class="nav-link" href="/provider/kyc">KYC</a></li>
         <% } %>
 
         <% if (user) { %>
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle text-white fw-semibold" href="#" id="userMenu" role="button" data-bs-toggle="dropdown" style="cursor: pointer;">
+            <a class="nav-link dropdown-toggle fw-semibold" href="#" id="userMenu" role="button"
+              data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
               <%= user.name %>
             </a>
 
-            <ul class="dropdown-menu dropdown-menu-end">
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
               <% if (user.role === 'admin') { %>
                 <li><a class="dropdown-item" href="/admin/dashboard">Admin Dashboard</a></li>
                 <li><a class="dropdown-item" href="/admin/storage">Manage Storage</a></li>
                 <li><a class="dropdown-item" href="/admin/reports">Sales Reports</a></li>
+                <li><a class="dropdown-item" href="/admin/kyc">Review KYC</a></li>
+              <% } else if (user.role === 'provider') { %>
+                <li><a class="dropdown-item" href="/provider/dashboard">Provider Dashboard</a></li>
+                <li><a class="dropdown-item" href="/provider/storage">Manage Storage</a></li>
+                <li><a class="dropdown-item" href="/provider/bookings">View Bookings</a></li>
+                <li><a class="dropdown-item" href="/provider/kyc">KYC Verification</a></li>
               <% } else { %>
                 <li><a class="dropdown-item" href="/customer/dashboard">Dashboard</a></li>
                 <li><a class="dropdown-item" href="/cart">My Cart</a></li>
@@ -66,6 +70,15 @@
             <a class="btn btn-light btn-sm" href="/login" style="border-radius: 20px; padding: 8px 24px; color: #2F6B6A; font-weight: 600;">Login</a>
           </li>
         <% } %>
+
+        <!-- Dark/Light mode toggle (available for everyone) -->
+        <li class="nav-item ms-2">
+          <button id="themeToggle" type="button" class="btn btn-outline-light btn-sm"
+            style="border-radius: 20px; padding: 8px 18px;">
+            🌙 Dark Mode
+          </button>
+        </li>
+
 
       </ul>
     </div>
