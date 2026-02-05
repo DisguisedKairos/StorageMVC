@@ -30,10 +30,11 @@ module.exports = {
                 name: user.name,
                 email: user.email,
                 role: user.role,
-                walletBalance: 0
+                walletBalance: 0,
+                loyaltyPoints: 0
             };
 
-            // Load wallet balance only for customers, then redirect by role
+            // Load wallet balance and loyalty points only for customers, then redirect by role
             const redirectByRole = () => {
                 if (user.role === "admin") return res.redirect("/admin/dashboard");
                 if (user.role === "provider") return res.redirect("/provider/dashboard");
@@ -45,7 +46,14 @@ module.exports = {
                     // Even if balance lookup fails, don't block login
                     req.session.user.walletBalance = (balance || 0);
                     req.session.user.wallet_balance = (balance || 0);
-                    return redirectByRole();
+                    
+                    // Also fetch loyalty points
+                    User.getLoyaltyPoints(user.user_id, (errLoyalty, points) => {
+                        if (!errLoyalty && points) {
+                            req.session.user.loyaltyPoints = points.current || 0;
+                        }
+                        return redirectByRole();
+                    });
                 });
             } else {
                 return redirectByRole();

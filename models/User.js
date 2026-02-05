@@ -70,5 +70,31 @@ module.exports = {
             [id],
             callback
         );
+    },
+
+    getLoyaltyPoints: (id, callback) => {
+        db.query(
+            `SELECT loyalty_points, lifetime_points FROM users WHERE user_id = ?`,
+            [id],
+            (err, rows) => {
+                if (err) return callback(err);
+                const points = rows && rows[0] ? { 
+                    current: Number(rows[0].loyalty_points) || 0,
+                    lifetime: Number(rows[0].lifetime_points) || 0
+                } : { current: 0, lifetime: 0 };
+                return callback(null, points);
+            }
+        );
+    },
+
+    adjustLoyaltyPoints: (id, delta, callback) => {
+        db.query(
+            `UPDATE users SET loyalty_points = COALESCE(loyalty_points, 0) + ? WHERE user_id = ?`,
+            [Number(delta) || 0, id],
+            (err) => {
+                if (err) return callback(err);
+                return module.exports.getLoyaltyPoints(id, callback);
+            }
+        );
     }
 };

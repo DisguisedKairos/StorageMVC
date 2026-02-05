@@ -36,6 +36,24 @@ app.use((req, res, next) => {
 });
 
 /* ======================
+   REFRESH LOYALTY POINTS FOR CUSTOMERS
+====================== */
+app.use((req, res, next) => {
+  if (req.session.user && req.session.user.role === 'customer') {
+    const User = require("./models/User");
+    User.getLoyaltyPoints(req.session.user.id, (err, points) => {
+      if (!err && points) {
+        req.session.user.loyaltyPoints = points.current || 0;
+        res.locals.user.loyaltyPoints = points.current || 0;
+      }
+      next();
+    });
+  } else {
+    next();
+  }
+});
+
+/* ======================
    VIEW ENGINE
 ====================== */
 app.set("view engine", "ejs");
@@ -52,6 +70,7 @@ const cartController = require("./controllers/cartController");
 const invoiceController = require("./controllers/invoiceController");
 const walletController = require("./controllers/walletController");
 const providerController = require("./controllers/providerController");
+const loyaltyController = require("./controllers/loyaltyController");
 
 /* ======================
    ROUTES
@@ -133,6 +152,13 @@ app.get("/wallet/stripe-success", walletController.stripeTopupSuccess);
 app.get("/wallet/stripe-cancel", walletController.stripeTopupCancel);
 app.post("/wallet/paynow/finalize", walletController.payNowTopupFinalize);
 app.post("/wallet/netsqr/finalize", walletController.netsQrTopupFinalize);
+
+/* ---------- LOYALTY POINTS ---------- */
+app.get("/loyalty/dashboard", loyaltyController.dashboard);
+app.get("/loyalty/redeem", loyaltyController.showRedeemPage);
+app.post("/api/loyalty/redeem", loyaltyController.redeemPointsApi);
+app.get("/api/loyalty/info", loyaltyController.getInfoApi);
+app.post("/api/loyalty/calculate-reward", loyaltyController.calculateReward);
 
 /* ---------- NETS QR ---------- */
 app.get("/sse/payment-status/:txnRetrievalRef", invoiceController.netsSsePaymentStatus);

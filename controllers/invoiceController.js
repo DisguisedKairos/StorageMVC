@@ -1,6 +1,7 @@
 const Cart = require("../models/Cart");
 const Invoice = require("../models/Invoice");
 const User = require("../models/User");
+const LoyaltyPoints = require("../models/LoyaltyPoints");
 
 function parseDateOnly(str) {
   const d = new Date(`${str}T00:00:00`);
@@ -218,28 +219,39 @@ module.exports = {
                 }, (errTx) => {
                   if (errTx) console.error("Error recording wallet transaction:", errTx);
                   
-                  // Save session and then render
-                  req.session.save((saveErr) => {
-                    if (saveErr) console.error("Session save error:", saveErr);
-                    
-                    data.header.subtotal = Number(data.header.subtotal) || 0;
-                    data.header.tax = Number(data.header.tax) || 0;
-                    data.header.totalAmount = Number(data.header.totalAmount) || 0;
-                    data.items = (data.items || []).map((it) => ({
-                      ...it,
-                      unit_price: Number(it.unit_price) || 0,
-                      subtotal: Number(it.subtotal) || 0,
-                      quantity: parseInt(it.quantity, 10) || 0,
-                      days: parseInt(it.days, 10) || 0
-                    }));
+                  // Award loyalty points after successful payment
+                  LoyaltyPoints.awardPoints(
+                    userId,
+                    totalAmount,
+                    `BOOKING-${Date.now()}`,
+                    `Earned from booking ${start_date} to ${end_date}`,
+                    (errLoyalty) => {
+                      if (errLoyalty) console.error("Error awarding loyalty points:", errLoyalty);
+                      
+                      // Save session and then render
+                      req.session.save((saveErr) => {
+                        if (saveErr) console.error("Session save error:", saveErr);
+                        
+                        data.header.subtotal = Number(data.header.subtotal) || 0;
+                        data.header.tax = Number(data.header.tax) || 0;
+                        data.header.totalAmount = Number(data.header.totalAmount) || 0;
+                        data.items = (data.items || []).map((it) => ({
+                          ...it,
+                          unit_price: Number(it.unit_price) || 0,
+                          subtotal: Number(it.subtotal) || 0,
+                          quantity: parseInt(it.quantity, 10) || 0,
+                          days: parseInt(it.days, 10) || 0
+                        }));
 
-                    return res.render("invoice", {
-                      user: req.session.user,
-                      header: data.header,
-                      items: data.items,
-                      paymentMethod: "EWallet"
-                    });
-                  });
+                        return res.render("invoice", {
+                          user: req.session.user,
+                          header: data.header,
+                          items: data.items,
+                          paymentMethod: "EWallet"
+                        });
+                      });
+                    }
+                  );
                 });
               });
             });
@@ -460,7 +472,18 @@ module.exports = {
               req.session.lastInvoice = data;
               delete req.session.pendingPayment;
               decrementStock(summary.items, () => {});
-              return res.json({ ok: true, redirect: "/payment/success" });
+              
+              // Award loyalty points after successful payment
+              LoyaltyPoints.awardPoints(
+                user.id,
+                data.header.totalAmount,
+                `INVOICE-${data.header.invoice_id}`,
+                `Earned from PayPal payment on invoice ${data.header.invoice_id}`,
+                (errLoyalty) => {
+                  if (errLoyalty) console.error("Error awarding loyalty points:", errLoyalty);
+                  return res.json({ ok: true, redirect: "/payment/success" });
+                }
+              );
             }
           );
           });
@@ -528,7 +551,18 @@ module.exports = {
               req.session.lastInvoice = data;
               delete req.session.pendingPayment;
               decrementStock(summary.items, () => {});
-              return res.redirect("/payment/success");
+              
+              // Award loyalty points after successful payment
+              LoyaltyPoints.awardPoints(
+                user.id,
+                data.header.totalAmount,
+                `INVOICE-${data.header.invoice_id}`,
+                `Earned from Stripe payment on invoice ${data.header.invoice_id}`,
+                (errLoyalty) => {
+                  if (errLoyalty) console.error("Error awarding loyalty points:", errLoyalty);
+                  return res.redirect("/payment/success");
+                }
+              );
             }
           );
           });
@@ -697,7 +731,18 @@ module.exports = {
         computeCartTotals(user.id, pending.start_date, pending.end_date, (errSum, summary) => {
           if (!errSum) decrementStock(summary.items, () => {});
         });
-        return res.json({ ok: true });
+        
+        // Award loyalty points after successful NETS payment
+        LoyaltyPoints.awardPoints(
+          user.id,
+          data.header.totalAmount,
+          `INVOICE-${data.header.invoice_id}`,
+          `Earned from NETSQR payment on invoice ${data.header.invoice_id}`,
+          (errLoyalty) => {
+            if (errLoyalty) console.error("Error awarding loyalty points:", errLoyalty);
+            return res.json({ ok: true });
+          }
+        );
       }
     );
   },

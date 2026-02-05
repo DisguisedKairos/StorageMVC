@@ -23,6 +23,12 @@
               Balance: <strong>$<%= Number(user.walletBalance || user.wallet_balance || 0).toFixed(2) %></strong>
             </span>
           </li>
+          <li class="nav-item">
+            <a class="btn btn-sm" href="/loyalty/dashboard" style="background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 8px 16px; text-decoration: none; display: flex; align-items: center; gap: 6px;">
+              <span>⭐</span>
+              <span><strong><%= Number(user.loyaltyPoints || 0).toLocaleString() %></strong></span>
+            </a>
+          </li>
         <% } %>
 
         <% if (user && user.role === 'admin') { %>
