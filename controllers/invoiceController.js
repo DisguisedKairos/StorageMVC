@@ -839,6 +839,7 @@ module.exports = {
         const bookingRows = (rows || []).map((r) => ({
           type: "Booking",
           id: r.booking_id,
+          storageId: r.storage_id,
           ref: `BOOKING-${r.booking_id}`,
           title: r.title || `Storage #${r.storage_id}`,
           location: r.location || "N/A",
