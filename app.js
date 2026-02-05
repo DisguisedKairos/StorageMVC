@@ -110,6 +110,7 @@ app.get("/customer/dashboard", customerController.dashboard);
 app.get("/storage", storageController.browse);
 app.get("/storage/:id", storageController.detail);
 app.post("/storage/:id/review", storageController.addReview);
+app.post("/storage/:id/complaint", storageController.addComplaint);
 
 /* ---------- PROVIDER ---------- */
 app.get("/provider/dashboard", providerController.dashboard);
@@ -122,6 +123,9 @@ app.get("/provider/storage/edit/:id", providerController.showEditStorage);
 app.post("/provider/storage/edit/:id", providerController.updateStorage);
 app.get("/provider/storage/delete/:id", providerController.deleteStorage);
 app.get("/provider/bookings", providerController.listBookings);
+app.get("/provider/calendar", providerController.calendar);
+app.get("/provider/promotions", providerController.promotions);
+app.post("/provider/promotions", providerController.createPromotion);
 
 /* ---------- CART ---------- */
 app.get("/cart", cartController.viewCart);
@@ -235,6 +239,22 @@ app.get("/admin/reports", (req, res) => {
   }
 
   adminController.reports(req, res);
+});
+app.get("/admin/notifications", (req, res) => {
+  if (!req.session.user) return res.redirect("/login");
+  if (req.session.user.role !== "admin") {
+    return res.status(403).send("Not authorized");
+  }
+
+  adminController.notifications(req, res);
+});
+app.get("/admin/leaderboards", (req, res) => {
+  if (!req.session.user) return res.redirect("/login");
+  if (req.session.user.role !== "admin") {
+    return res.status(403).send("Not authorized");
+  }
+
+  adminController.leaderboards(req, res);
 });
 
 /* ---------- ADMIN KYC ---------- */
