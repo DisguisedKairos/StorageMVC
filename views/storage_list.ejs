@@ -435,12 +435,15 @@
   function showAllLocations() {
     // Show location section
     document.getElementById('locations-section').style.display = 'block';
-    
-    // Hide storage grid section
-    document.getElementById('storage-grid').style.display = 'none';
-    
-    // Smooth scroll to locations
-    document.getElementById('locations-section').scrollIntoView({ behavior: 'smooth' });
+
+    // Ensure storage grid is visible and reset cards
+    document.getElementById('storage-grid').style.display = 'block';
+    document.getElementById('location-title').textContent = 'Available Storage';
+    const cards = document.querySelectorAll('.storage-card');
+    cards.forEach(card => { card.style.display = 'block'; });
+
+    // Smooth scroll to storage list
+    document.getElementById('storage-grid').scrollIntoView({ behavior: 'smooth' });
   }
 </script>
 
@@ -563,11 +566,11 @@
 </section>
 
 <!-- Storage Items by Location -->
-<section class="storage-section" id="storage-grid" style="display: <%= filtersApplied ? 'block' : 'none' %>;">
+<section class="storage-section" id="storage-grid" style="display: block;">
   <div class="storage-content">
     <div class="storage-header">
       <h3 id="location-title"><%= filtersApplied ? 'Filtered Storage' : 'Available Storage' %></h3>
-      <button onclick="showAllLocations()" class="btn-back" style="display: <%= filtersApplied ? 'none' : 'inline-block' %>;">← Back to Locations</button>
+      <button onclick="showAllLocations()" class="btn-back">← Show All</button>
     </div>
 
     <div class="storage-grid">
