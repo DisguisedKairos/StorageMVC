@@ -1,0 +1,241 @@
+<%- include("partials/header", { title: "Redeem Points" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h2 class="mb-1">Redeem Your Points</h2>
+      <p class="text-muted">Convert your loyalty points into discounts on your next purchase</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-6">
+      <!-- Points Info -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+          <h5 class="card-title mb-4">Your Points</h5>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="text-muted">Available Points:</span>
+            <span class="fw-bold h4 mb-0"><%= loyalty_points.toLocaleString() %></span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="text-muted">Maximum Discount:</span>
+            <span class="fw-bold text-success h5 mb-0">$<%= (loyalty_points / 100 * parseFloat(redeem_rate)).toFixed(2) %></span>
+          </div>
+          <small class="text-muted">100 points = $<%= parseFloat(redeem_rate).toFixed(2) %> discount</small>
+        </div>
+      </div>
+
+      <!-- Quick Redemption Options -->
+      <% if (redeemOptions && redeemOptions.length > 0) { %>
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom">
+          <h5 class="mb-0">Quick Redemption Options</h5>
+        </div>
+        <div class="card-body">
+          <div class="btn-group-vertical w-100" role="group">
+            <% redeemOptions.forEach((option, idx) => { %>
+              <button type="button" class="btn btn-outline-primary text-start p-3 border-bottom-0 redemption-option" 
+                      data-points="<%= option.points %>" data-value="<%= option.value.toFixed(2) %>">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong><%= option.points %> Points</strong>
+                    <p class="small text-muted mb-0">Get $<%= option.value.toFixed(2) %> discount</p>
+                  </div>
+                  <i class="bi bi-chevron-right text-muted"></i>
+                </div>
+              </button>
+            <% }) %>
+          </div>
+        </div>
+      </div>
+      <% } %>
+
+      <!-- Custom Amount -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <h5 class="mb-0">Custom Redemption</h5>
+        </div>
+        <div class="card-body">
+          <form id="customRedeemForm">
+            <div class="mb-3">
+              <label class="form-label">Points to Redeem</label>
+              <div class="input-group">
+                <input type="number" id="customPoints" class="form-control" 
+                       placeholder="Enter points" min="100" max="<%= loyalty_points %>" 
+                       value="100" step="10">
+                <span class="input-group-text">pts</span>
+              </div>
+              <small class="form-text text-muted">Minimum 100 points</small>
+            </div>
+
+            <div class="mb-3 p-3 bg-light rounded">
+              <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Discount Value:</span>
+                <span class="fw-bold">$<span id="discountValue">1.00</span></span>
+              </div>
+              <small class="text-muted">Based on your current tier redemption rate</small>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg w-100" id="redeemBtn">
+              Redeem Points
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ / Info Column -->
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+          <h5 class="card-title mb-4">📚 How Redemption Works</h5>
+          <div class="faq-item mb-4">
+            <h6 class="fw-bold mb-2">❓ How do I redeem my points?</h6>
+            <p class="small text-muted mb-0">Select the amount of points you want to redeem, and we'll apply the discount to your next booking.</p>
+          </div>
+          <div class="faq-item mb-4">
+            <h6 class="fw-bold mb-2">💵 How much is each point worth?</h6>
+            <p class="small text-muted mb-0">The redemption value depends on your loyalty tier. Currently, 100 points = $<%= parseFloat(redeem_rate).toFixed(2) %> for you.</p>
+          </div>
+          <div class="faq-item mb-4">
+            <h6 class="fw-bold mb-2">⏰ When can I use the discount?</h6>
+            <p class="small text-muted mb-0">Your redeemed discount will be applied at checkout on your next storage booking.</p>
+          </div>
+          <div class="faq-item mb-4">
+            <h6 class="fw-bold mb-2">🔄 Can I undo redemption?</h6>
+            <p class="small text-muted mb-0">No, redemptions are final. Make sure you want to redeem before confirming.</p>
+          </div>
+          <div class="faq-item mb-4">
+            <h6 class="fw-bold mb-2">🎯 How do I earn more points?</h6>
+            <p class="small text-muted mb-0">You automatically earn points on every booking! Higher tier members earn points faster.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tier Benefits -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <h5 class="mb-0">Tier Benefits</h5>
+        </div>
+        <div class="card-body">
+          <div class="tier-info mb-3 p-3 rounded" style="background: #f0f9ff; border-left: 4px solid #667eea;">
+            <h6 class="fw-bold mb-2">📈 Earn Rate</h6>
+            <p class="small mb-0">Higher tiers earn more points per dollar spent. Reach Silver or Gold for faster accumulation!</p>
+          </div>
+          <div class="tier-info mb-3 p-3 rounded" style="background: #f0fff4; border-left: 4px solid #48bb78;">
+            <h6 class="fw-bold mb-2">💰 Redeem Rate</h6>
+            <p class="small mb-0">Premium members get more discount value when redeeming points.</p>
+          </div>
+          <div class="tier-info p-3 rounded" style="background: #fff5f0; border-left: 4px solid #f6ad55;">
+            <h6 class="fw-bold mb-2">🎁 Bonuses</h6>
+            <p class="small mb-0">Tier members receive bonus multipliers, earning even more points.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Back Button -->
+  <div class="mt-5 text-center">
+    <a href="/loyalty/dashboard" class="btn btn-outline-secondary">
+      ← Back to Loyalty Dashboard
+    </a>
+  </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="redeemSuccessModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white border-0">
+        <h5 class="modal-title">✓ Redemption Successful</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center py-4">
+        <p class="fs-5 mb-2">You've redeemed <strong id="successPoints">0</strong> points!</p>
+        <p class="text-success fs-4 fw-bold mb-0">$<span id="successValue">0.00</span> discount available</p>
+        <small class="text-muted d-block mt-3">The discount will be applied at checkout on your next booking.</small>
+      </div>
+      <div class="modal-footer">
+        <a href="/storage" class="btn btn-success">Continue Shopping</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const redeemRate = parseFloat('<%= redeem_rate %>');
+  const maxPoints = <%= loyalty_points %>;
+
+  // Update discount value when input changes
+  document.getElementById('customPoints').addEventListener('input', function() {
+    const points = parseInt(this.value) || 0;
+    const discount = (points / 100) * redeemRate;
+    document.getElementById('discountValue').textContent = discount.toFixed(2);
+  });
+
+  // Quick redemption options
+  document.querySelectorAll('.redemption-option').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const points = parseInt(this.getAttribute('data-points'));
+      document.getElementById('customPoints').value = points;
+      document.getElementById('customPoints').dispatchEvent(new Event('input'));
+    });
+  });
+
+  // Handle redemption form submission
+  document.getElementById('customRedeemForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const points = parseInt(document.getElementById('customPoints').value);
+    
+    if (isNaN(points) || points < 100 || points > maxPoints) {
+      alert('Please enter a valid amount between 100 and ' + maxPoints);
+      return;
+    }
+
+    const redeemBtn = document.getElementById('redeemBtn');
+    redeemBtn.disabled = true;
+    redeemBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+
+    try {
+      const response = await fetch('/api/loyalty/redeem', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ points: points })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        document.getElementById('successPoints').textContent = data.points;
+        document.getElementById('successValue').textContent = data.discount.toFixed(2);
+        
+        const modal = new bootstrap.Modal(document.getElementById('redeemSuccessModal'));
+        modal.show();
+        
+        // Reload dashboard after modal closes
+        document.getElementById('redeemSuccessModal').addEventListener('hidden.bs.modal', () => {
+          window.location.href = '/loyalty/dashboard';
+        }, { once: true });
+      } else {
+        alert('Error: ' + (data.error || 'Failed to redeem points'));
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('An error occurred. Please try again.');
+    } finally {
+      redeemBtn.disabled = false;
+      redeemBtn.innerHTML = 'Redeem Points';
+    }
+  });
+
+  // Initialize discount value on page load
+  document.getElementById('customPoints').dispatchEvent(new Event('input'));
+</script>
+
+<%- include("partials/footer") %>

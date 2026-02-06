@@ -1,0 +1,69 @@
+<%- include("partials/header", { title: "PayPal Wallet Top-up" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card shadow-soft">
+        <div class="card-body text-center">
+          <h5 class="card-title mb-4">PayPal Wallet Top-up</h5>
+          
+          <div class="alert alert-info">
+            <div class="fw-semibold">Amount</div>
+            <div style="font-size: 2rem; font-weight: bold; margin: 0.5rem 0;">
+              SGD $<%= Number(amount).toFixed(2) %>
+            </div>
+          </div>
+
+          <div id="paypal-button-container" class="my-4"></div>
+
+          <a href="/wallet/topup" class="btn btn-link">Cancel</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.paypal.com/sdk/js?client-id=<%= paypalClientId %>&currency=SGD"></script>
+<script>
+  paypal.Buttons({
+    createOrder: async () => {
+      try {
+        const response = await fetch('/api/wallet/paypal/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const order = await response.json();
+        return order.id;
+      } catch (error) {
+        console.error('Order creation failed:', error);
+        alert('Failed to create PayPal order');
+        throw error;
+      }
+    },
+    onApprove: async (data) => {
+      try {
+        const response = await fetch('/api/wallet/paypal/capture-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderID: data.orderID })
+        });
+        const result = await response.json();
+        if (result.ok) {
+          window.location.href = result.redirect;
+        } else {
+          alert('Payment capture failed: ' + (result.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Capture failed:', error);
+        alert('Failed to capture payment');
+      }
+    },
+    onError: (err) => {
+      console.error('PayPal error:', err);
+      alert('Payment error: ' + err.message);
+    }
+  }).render('#paypal-button-container');
+</script>
+
+<%- include("partials/footer") %>

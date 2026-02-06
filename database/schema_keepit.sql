@@ -1,0 +1,153 @@
+-- KeepIt extension schema (run after your existing schema)
+-- Adds provider marketplace features: provider listings, KYC, reviews, and mapping fields.
+
+-- 1) Storage provider fields + map fields
+ALTER TABLE storage_spaces
+  ADD COLUMN provider_id INT NULL AFTER storage_id,
+  ADD COLUMN storage_type VARCHAR(20) NOT NULL DEFAULT 'physical' AFTER provider_id,
+  ADD COLUMN latitude DECIMAL(10,7) NULL AFTER location,
+  ADD COLUMN longitude DECIMAL(10,7) NULL AFTER latitude;
+
+-- Optional FK (only if you have users table with user_id PK)
+-- ALTER TABLE storage_spaces
+--   ADD CONSTRAINT fk_storage_provider FOREIGN KEY (provider_id) REFERENCES users(user_id);
+
+-- 2) Reviews
+CREATE TABLE IF NOT EXISTS reviews (
+  review_id INT AUTO_INCREMENT PRIMARY KEY,
+  storage_id INT NOT NULL,
+  user_id INT NOT NULL,
+  rating TINYINT NOT NULL,
+  comment TEXT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_reviews_storage (storage_id),
+  KEY idx_reviews_user (user_id)
+);
+
+-- 3) KYC Requests (one row per provider; uses UNIQUE(user_id))
+CREATE TABLE IF NOT EXISTS kyc_requests (
+  kyc_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL UNIQUE,
+  full_name VARCHAR(255) NOT NULL,
+  id_type VARCHAR(50) NOT NULL,
+  id_number VARCHAR(80) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+  reviewed_by INT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_kyc_status (status)
+);
+
+-- 4) If you want to enforce role choices in users table, keep it at app level.
+
+-- 4a) IMPORTANT: Ensure your users.role supports the value 'provider'.
+-- If your existing schema uses a short VARCHAR or an ENUM that doesn't include 'provider',
+-- registration will fail with: "Data truncated for column 'role'".
+-- This statement is safe for most student project schemas (it will widen the column).
+ALTER TABLE users
+  MODIFY role VARCHAR(20) NOT NULL DEFAULT 'customer';
+
+/* ========================================
+   LOYALTY POINTS SYSTEM SCHEMA
+   ======================================== */
+
+-- 5) Add loyalty points columns to users table
+ALTER TABLE users
+  ADD COLUMN loyalty_points INT NOT NULL DEFAULT 0 AFTER wallet_balance,
+  ADD COLUMN lifetime_points INT NOT NULL DEFAULT 0 AFTER loyalty_points,
+  ADD INDEX idx_loyalty_points (loyalty_points);
+
+-- 6) Create loyalty points transaction history
+CREATE TABLE IF NOT EXISTS loyalty_transactions (
+  loyalty_txn_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  points INT NOT NULL,
+  transaction_type VARCHAR(20) NOT NULL COMMENT 'EARNED, REDEEMED, EXPIRED, BONUS',
+  reference_id VARCHAR(100) NULL COMMENT 'booking_id, invoice_id, etc.',
+  description VARCHAR(255) NULL,
+  expiry_date DATE NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_loyalty_txn_user (user_id),
+  KEY idx_loyalty_txn_type (transaction_type),
+  KEY idx_loyalty_txn_created (created_at)
+);
+
+-- 7) Loyalty tier settings (reference table)
+CREATE TABLE IF NOT EXISTS loyalty_tiers (
+  tier_id INT AUTO_INCREMENT PRIMARY KEY,
+  tier_name VARCHAR(50) NOT NULL UNIQUE,
+  min_points INT NOT NULL,
+  max_points INT NULL,
+  earn_rate DECIMAL(3,2) NOT NULL COMMENT 'points per $1 spent',
+  redeem_rate DECIMAL(3,2) NOT NULL COMMENT 'discount $ per 100 points',
+  bonus_multiplier DECIMAL(3,2) NOT NULL DEFAULT 1.0,
+  description VARCHAR(255) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 8) Insert default loyalty tiers
+INSERT INTO loyalty_tiers (tier_name, min_points, max_points, earn_rate, redeem_rate, bonus_multiplier, description) VALUES
+('Bronze', 0, 499, 1.0, 1.0, 1.0, 'Basic tier - 1 point per $1 spent'),
+('Silver', 500, 1999, 1.5, 1.2, 1.2, 'Mid tier - 1.5 points per $1 spent, 20% better redeem rate'),
+('Gold', 2000, NULL, 2.0, 1.5, 1.5, 'Elite tier - 2 points per $1 spent, 50% better redeem rate');
+
+-- 9) Booking points mapping (to track which bookings gave points)
+CREATE TABLE IF NOT EXISTS booking_loyalty (
+  booking_loyalty_id INT AUTO_INCREMENT PRIMARY KEY,
+  booking_id INT NOT NULL,
+  user_id INT NOT NULL,
+  points_earned INT NOT NULL,
+  redemption_amount DECIMAL(10,2) NULL COMMENT 'if points were redeemed for discount',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_booking_loyalty (booking_id, user_id)
+);
+
+-- 10) Create indexes for loyalty performance
+CREATE INDEX idx_loyalty_tier_points ON loyalty_tiers (min_points, max_points);
+CREATE INDEX idx_booking_loyalty_user ON booking_loyalty (user_id);
+
+/* ========================================
+   PROVIDER MARKETING + COMPLAINTS + NOTIFICATIONS
+   ======================================== */
+
+-- Promotions / discounts
+CREATE TABLE IF NOT EXISTS provider_promotions (
+  promo_id INT AUTO_INCREMENT PRIMARY KEY,
+  provider_id INT NOT NULL,
+  code VARCHAR(40) NOT NULL,
+  discount_percent DECIMAL(5,2) NOT NULL DEFAULT 0,
+  start_date DATE NULL,
+  end_date DATE NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_promo_provider (provider_id),
+  KEY idx_promo_status (status)
+);
+
+-- Customer complaints on listings
+CREATE TABLE IF NOT EXISTS complaints (
+  complaint_id INT AUTO_INCREMENT PRIMARY KEY,
+  storage_id INT NOT NULL,
+  provider_id INT NOT NULL,
+  customer_id INT NOT NULL,
+  title VARCHAR(120) NOT NULL,
+  description TEXT NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'OPEN',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_complaint_provider (provider_id),
+  KEY idx_complaint_storage (storage_id),
+  KEY idx_complaint_created (created_at)
+);
+
+-- Admin notifications (e.g., complaint threshold)
+CREATE TABLE IF NOT EXISTS admin_notifications (
+  notification_id INT AUTO_INCREMENT PRIMARY KEY,
+  provider_id INT NULL,
+  type VARCHAR(50) NOT NULL,
+  message VARCHAR(255) NOT NULL,
+  is_read TINYINT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_admin_notif_created (created_at),
+  KEY idx_admin_notif_provider (provider_id),
+  KEY idx_admin_notif_type (type)
+);

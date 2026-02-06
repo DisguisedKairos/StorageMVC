@@ -1,4 +1,4 @@
-<%- include("partials/header", { title: "My Cart" }) %>
+<%- include("partials/header", { title: "My Cart", bodyClass: "dashboard-bg" }) %>
 <%- include("partials/navbar", { user: user }) %>
 
 <div class="container container-max py-5">
@@ -19,7 +19,7 @@
             <tr>
               <th>Storage</th>
               <th>Location</th>
-              <th style="width:160px;">Quantity</th>
+              <th>Quantity</th>
               <th class="text-end">Price/Day</th>
               <th class="text-end">Subtotal</th>
               <th style="width:120px;"></th>
@@ -33,13 +33,7 @@
                   <div class="small text-muted"><%= i.size %></div>
                 </td>
                 <td><%= i.location || 'N/A' %></td>
-                <td>
-                  <form action="/cart/update" method="POST" class="d-flex gap-2">
-                    <input type="hidden" name="storage_id" value="<%= i.storage_id %>">
-                    <input class="form-control form-control-sm" type="number" name="quantity" min="1" value="<%= i.quantity %>">
-                    <button class="btn btn-primary btn-sm" type="submit">Update</button>
-                  </form>
-                </td>
+                <td><%= i.quantity %></td>
                 <td class="text-end">$<%= Number(i.unit_price).toFixed(2) %></td>
                 <td class="text-end">$<%= (Number(i.unit_price) * Number(i.quantity)).toFixed(2) %></td>
                 <td class="text-end">

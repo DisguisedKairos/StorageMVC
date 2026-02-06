@@ -67,6 +67,7 @@ exports.generateQrCode = async (req, res) => {
          fullNetsResponse: response.data,
         apiKey: process.env.API_KEY,
         projectId: process.env.PROJECT_ID,
+        isWalletTopup: req.body.isWalletTopup || false
       });
     } else {
       // Handle partial or failed responses

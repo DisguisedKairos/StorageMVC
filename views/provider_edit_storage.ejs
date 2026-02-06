@@ -1,0 +1,96 @@
+<%- include("partials/header", { title: "Edit Listing" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5" style="max-width:900px;">
+  <h3 class="mb-3">Edit Storage Listing</h3>
+  <div class="card shadow-soft p-4">
+    <form method="POST" action="/provider/storage/edit/<%= storage.storage_id %>" enctype="multipart/form-data">
+
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Type</label>
+          <select class="form-select" name="storage_type" required>
+            <option value="physical" <%= storage && storage.storage_type === 'physical' ? 'selected' : '' %>>Physical</option>
+            <option value="digital" <%= storage && storage.storage_type === 'digital' ? 'selected' : '' %>>Digital</option>
+          </select>
+        </div>
+        <div class="col-md-8">
+          <label class="form-label">Title</label>
+          <input class="form-control" name="title" required value="<%= (storage && storage.title) || '' %>">
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Size</label>
+          <select class="form-select" name="size" required>
+            <option value="Small" <%= storage && storage.size === 'Small' ? 'selected' : '' %>>Small</option>
+            <option value="Medium" <%= storage && storage.size === 'Medium' ? 'selected' : '' %>>Medium</option>
+            <option value="Large" <%= storage && storage.size === 'Large' ? 'selected' : '' %>>Large</option>
+          </select>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Price per day (SGD)</label>
+          <input class="form-control" name="price_per_day" type="number" step="0.01" required value="<%= (storage && storage.price_per_day) || '' %>">
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Status</label>
+          <select class="form-select" name="status">
+            <option value="Available" <%= !storage || storage.status === 'Available' ? 'selected' : '' %>>Available</option>
+            <option value="Unavailable" <%= storage && storage.status === 'Unavailable' ? 'selected' : '' %>>Unavailable</option>
+          </select>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Location</label>
+          <input class="form-control" name="location" value="<%= (storage && storage.location) || '' %>" placeholder="e.g., Toa Payoh">
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Latitude (optional)</label>
+          <input class="form-control" name="latitude" value="<%= (storage && storage.latitude) || '' %>">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Longitude (optional)</label>
+          <input class="form-control" name="longitude" value="<%= (storage && storage.longitude) || '' %>">
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Total units</label>
+          <input class="form-control" name="total_units" type="number" min="1" required value="<%= (storage && storage.total_units) || 1 %>">
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Available units</label>
+          <input class="form-control" name="available_units" type="number" min="0" required value="<%= (storage && storage.available_units) || (storage && storage.total_units) || 1 %>">
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Description</label>
+          <textarea class="form-control" name="description" rows="4"><%= (storage && storage.description) || '' %></textarea>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Add Images (up to 6)</label>
+          <input class="form-control" type="file" name="images" accept="image/png,image/jpeg,image/webp" multiple>
+          <div class="form-text">PNG, JPG, or WEBP up to 5MB each.</div>
+        </div>
+
+        <% if (images && images.length) { %>
+          <div class="col-12">
+            <label class="form-label">Current Images</label>
+            <div class="d-flex flex-wrap gap-2">
+              <% images.forEach(img => { %>
+                <img src="<%= img.image_path %>" alt="Storage" style="width:120px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;">
+              <% }) %>
+            </div>
+          </div>
+        <% } %>
+      </div>
+
+      <button class="btn btn-dark w-100 mt-4">Save Changes</button>
+    </form>
+  </div>
+</div>
+
+<%- include("partials/footer") %>

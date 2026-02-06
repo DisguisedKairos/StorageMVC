@@ -12,7 +12,7 @@ function getBaseUrl() {
   return process.env.APP_BASE_URL || `http://localhost:${process.env.APP_PORT || 3000}`;
 }
 
-async function createCheckoutSession({ amount, reference, userId }) {
+async function createCheckoutSession({ amount, reference, userId, successUrl, cancelUrl }) {
   const stripe = getStripe();
   const baseUrl = getBaseUrl();
   const amountCents = Math.round((parseFloat(amount) || 0) * 100);
@@ -20,6 +20,9 @@ async function createCheckoutSession({ amount, reference, userId }) {
   if (!amountCents) {
     throw new Error("Invalid Stripe amount");
   }
+
+  const finalSuccessUrl = successUrl || `${baseUrl}/stripe/success?session_id={CHECKOUT_SESSION_ID}`;
+  const finalCancelUrl = cancelUrl || `${baseUrl}/stripe/cancel`;
 
   return stripe.checkout.sessions.create({
     mode: "payment",
@@ -35,8 +38,8 @@ async function createCheckoutSession({ amount, reference, userId }) {
         },
       },
     ],
-    success_url: `${baseUrl}/stripe/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${baseUrl}/stripe/cancel`,
+    success_url: finalSuccessUrl,
+    cancel_url: finalCancelUrl,
     metadata: {
       userId: String(userId || ""),
     },

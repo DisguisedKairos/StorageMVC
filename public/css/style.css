@@ -63,6 +63,92 @@ body.bg-light {
   color: #ffffff;
 }
 
+/* Dropdown menu fixes */
+.dropdown-menu {
+  z-index: 1050 !important;
+  border: 1px solid var(--cs-border);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.dropdown-menu .dropdown-item {
+  color: var(--cs-text-main);
+  padding: 0.65rem 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.dropdown-menu .dropdown-item:hover {
+  background-color: var(--cs-green-light);
+  color: var(--cs-green-dark);
+}
+
+/* Profile avatar */
+.cs-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(47, 107, 106, 0.15);
+  color: #2f6b6a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.2rem;
+  overflow: hidden;
+  border: 2px solid rgba(47, 107, 106, 0.35);
+}
+
+.cs-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cs-avatar-clickable {
+  cursor: pointer;
+}
+
+/* Chat */
+.chat-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 0.5rem;
+  background: #f8fafc;
+  border-radius: 0.75rem;
+}
+
+.chat-message {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.chat-in .chat-bubble {
+  align-self: flex-start;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+.chat-out .chat-bubble {
+  align-self: flex-end;
+  background: #2f6b6a;
+  color: #fff;
+}
+
+.chat-bubble {
+  padding: 0.6rem 0.9rem;
+  border-radius: 0.9rem;
+  max-width: 75%;
+  word-break: break-word;
+}
+
+.chat-meta {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
 /* Cart badge styling (top-right bubble) */
 .navbar .badge {
   background-color: var(--cs-yellow) !important;
@@ -397,12 +483,12 @@ html {
 
 /* ======= Dark mode overrides ======= */
 body.cs-dark {
-  background-color: #020617 !important;
+  background-color: #2a3348 !important;
   color: #e5e7eb !important;
 }
 
 body.cs-dark .navbar.navbar-dark.bg-dark {
-  background-color: #020617 !important;
+  background-color: #222b3b !important;
   border-bottom-color: #1f2937;
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.9);
 }
@@ -422,18 +508,18 @@ body.cs-dark .navbar-dark .navbar-nav .nav-link.active {
 }
 
 body.cs-dark .card {
-  background-color: #020617;
+  background-color: #2f3a52;
   border-color: #1f2937;
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.9);
 }
 
 body.cs-dark .card-header {
-  background-color: #020617;
+  background-color: #2f3a52;
   border-bottom-color: #1f2937;
 }
 
 body.cs-dark .table {
-  background-color: #020617;
+  background-color: #2f3a52;
 }
 
 body.cs-dark .table thead {
@@ -442,7 +528,7 @@ body.cs-dark .table thead {
 }
 
 body.cs-dark .table tbody tr:nth-child(even) {
-  background-color: #020617;
+  background-color: #263249;
 }
 
 body.cs-dark .table tbody tr:hover {
@@ -451,7 +537,7 @@ body.cs-dark .table tbody tr:hover {
 
 body.cs-dark .form-control,
 body.cs-dark .form-select {
-  background-color: #020617;
+  background-color: #263249;
   color: #e5e7eb;
   border-color: #374151;
 }
@@ -501,7 +587,7 @@ body.cs-dark .cs-footer a {
 
 /* Dark mode product image placeholder */
 body.cs-dark .card-img-top.d-flex {
-  background-color: #020617 !important;
+  background-color: #263249 !important;
 }
 
 .wishlist-btn {
@@ -528,4 +614,59 @@ body.cs-dark .card-img-top.d-flex {
   max-width: 260px;
   width: 100%;
   height: auto;
+}
+
+
+/* ===== Dark Mode (Toggle) ===== */
+body.dark-mode,
+body.dark-mode.bg-light {
+  background-color: #2a3348 !important;
+  color: #f5f5f5 !important;
+}
+
+body.dark-mode .card,
+body.dark-mode .table,
+body.dark-mode .modal-content,
+body.dark-mode .list-group-item {
+  background-color: #2f3a52 !important;
+  color: #ffffff !important;
+}
+
+body.dark-mode .navbar {
+  background-color: #222b3b !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Ensure dark-mode overrides beat the base .navbar.navbar-dark.bg-dark rule */
+body.dark-mode .navbar.navbar-dark.bg-dark {
+  background-color: #222b3b !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+body.dark-mode .dropdown-menu {
+  background-color: #2f3a52 !important;
+  border-color: #334155 !important;
+}
+
+body.dark-mode .dropdown-item {
+  color: #f8fafc !important;
+}
+
+body.dark-mode .dropdown-item:hover {
+  background-color: #34415c !important;
+}
+
+/* Navbar dropdown menu z-index fix */
+.navbar {
+  position: relative;
+  z-index: 2000;
+}
+.navbar .dropdown-menu {
+  z-index: 2100;
+}
+
+/* ===== Extra Theme Overrides (background image + overlay) ===== */
+/* Darker overlay when dark mode is active (pairs with body::before in styles.css) */
+body.dark-mode::before {
+  background: rgba(0, 0, 0, 0.2) !important;
 }

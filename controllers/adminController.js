@@ -2,6 +2,8 @@ const Storage = require("../models/Storage");
 const User = require("../models/User");
 const Booking = require("../models/Booking");
 const Report = require("../models/Report");
+const Kyc = require("../models/Kyc");
+const AdminNotification = require("../models/AdminNotification");
 
 module.exports = {
     // ===== DASHBOARD =====
@@ -53,6 +55,56 @@ module.exports = {
             });
         });
     },
+
+    // ===== MODERATION QUEUE =====
+    moderationQueue: (req, res) => {
+        Kyc.listAll((errK, kycRows) => {
+            if (errK) return res.status(500).send("Database error");
+            Storage.getAll((errS, storageRows) => {
+                if (errS) return res.status(500).send("Database error");
+                Booking.getAll((errB, bookingRows) => {
+                    if (errB) return res.status(500).send("Database error");
+
+                    const pendingKyc = (kycRows || []).filter((k) => k.status === "PENDING");
+                    const storageReview = (storageRows || []).slice(0, 12);
+                    const suspicious = (bookingRows || []).filter((b) => {
+                        const refunded = Number(b.refunded_amount || 0);
+                        const status = (b.refund_status || "").toUpperCase();
+                        return refunded > 0 || (status && status !== "NONE");
+                    });
+
+                    res.render("admin_moderation", {
+                        user: req.session.user,
+                        pendingKyc,
+                        storageReview,
+                        suspicious: suspicious.slice(0, 12)
+                    });
+                });
+            });
+        });
+    },
+
+    // ===== NOTIFICATIONS =====
+    notifications: (req, res) => {
+        AdminNotification.listAll((err, rows) => {
+            if (err) return res.status(500).send("Database error");
+            res.render("admin_notifications", { user: req.session.user, notifications: rows || [] });
+        });
+    },
+
+    // ===== LEADERBOARDS =====
+    leaderboards: (req, res) => {
+        Report.getTopCustomers((errC, topCustomers) => {
+            Report.getTopProviders((errP, topProviders) => {
+                res.render("admin_leaderboards", {
+                    user: req.session.user,
+                    topCustomers: topCustomers || [],
+                    topProviders: topProviders || []
+                });
+            });
+        });
+    },
+
     // ===== STORAGE MANAGEMENT =====
     showStorageList: (req, res) => {
         Storage.getAll((err, storage) => {
@@ -85,6 +137,32 @@ module.exports = {
     deleteStorage: (req, res) => {
         Storage.remove(req.params.id, () => {
             res.redirect("/admin/storage");
+        });
+    },
+
+    // ===== KYC MANAGEMENT =====
+    showKycList: (req, res) => {
+        Kyc.listAll((err, rows) => {
+            if (err) return res.status(500).send("Database error");
+            res.render("admin_kyc", { user: req.session.user, kyc: rows || [] });
+        });
+    },
+
+    approveKyc: (req, res) => {
+        const id = parseInt(req.params.id, 10);
+        const adminId = req.session.user?.id || req.session.user?.user_id;
+        Kyc.setStatus({ id, status: "APPROVED", adminId }, (err) => {
+            if (err) return res.status(500).send("Database error");
+            res.redirect("/admin/kyc");
+        });
+    },
+
+    rejectKyc: (req, res) => {
+        const id = parseInt(req.params.id, 10);
+        const adminId = req.session.user?.id || req.session.user?.user_id;
+        Kyc.setStatus({ id, status: "REJECTED", adminId }, (err) => {
+            if (err) return res.status(500).send("Database error");
+            res.redirect("/admin/kyc");
         });
     },
 

@@ -1,26 +1,296 @@
 <%- include("partials/header", { title: "Login" }) %>
-<%- include("partials/navbar", { user: user }) %>
+<!-- Theme toggle (works on auth pages too) -->
+<div class="position-fixed top-0 end-0 p-3" style="z-index: 3000;">
+  <button id="themeToggle" type="button" class="btn btn-outline-light btn-sm" style="border-radius: 20px; padding: 8px 18px;">🌙 Dark Mode</button>
+</div>
 
-<div class="d-flex align-items-center justify-content-center" style="min-height:75vh;">
-  <div class="card shadow-soft p-4" style="width:380px;">
-    <h4 class="mb-1">Welcome back</h4>
-    <p class="small-muted mb-3">Login to access your account</p>
 
-    <form action="/login" method="POST">
-      <div class="mb-3">
-        <label class="form-label">Email</label>
-        <input required name="email" type="email" class="form-control" placeholder="you@example.com">
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow-x: hidden;
+    background: url('/images/log-inBG.png') no-repeat center center fixed;
+    background-size: cover;
+  }
+  
+  .auth-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-height: 100vh;
+    width: 100%;
+    padding-right: 80px;
+    position: relative;
+  }
+  
+  .logo-section {
+    position: absolute;
+    top: 40px;
+    left: 40px;
+    z-index: 10;
+  }
+  
+  .logo-section h2 {
+    color: #ffffff;
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0;
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+  }
+  
+  .auth-card {
+    background: rgba(30, 35, 45, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 24px;
+    padding: 50px 45px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(100, 255, 100, 0.3);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    position: relative;
+  }
+  
+  .auth-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 24px;
+    padding: 2px;
+    background: linear-gradient(135deg, rgba(100, 255, 100, 0.4), rgba(255, 200, 50, 0.4));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+  
+  .auth-card h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 8px;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  
+  .auth-card .subtitle {
+    color: #a0a0a0;
+    font-size: 13px;
+    margin-bottom: 35px;
+    text-align: center;
+  }
+  
+  .input-group-custom {
+    margin-bottom: 22px;
+  }
+  
+  .input-group-custom label {
+    display: block;
+    font-size: 13px;
+    color: #c0c0c0;
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+  
+  .input-with-icon {
+    position: relative;
+  }
+  
+  .input-with-icon i {
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #808080;
+    font-size: 16px;
+  }
+  
+  .input-with-icon input {
+    width: 100%;
+    padding: 15px 20px 15px 48px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 25px;
+    font-size: 14px;
+    transition: all 0.3s;
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+  }
+  
+  .input-with-icon input::placeholder {
+    color: #808080;
+  }
+  
+  .input-with-icon input:focus {
+    outline: none;
+    border-color: rgba(180, 255, 100, 0.6);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 3px rgba(180, 255, 100, 0.1);
+  }
+  
+  .remember-forgot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    font-size: 13px;
+  }
+  
+  .remember-me {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #c0c0c0;
+  }
+  
+  .remember-me input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+  }
+  
+  .forgot-link {
+    color: #a0a0a0;
+    text-decoration: none;
+    transition: color 0.3s;
+  }
+  
+  .forgot-link:hover {
+    color: #ffd700;
+  }
+  
+  .btn-login {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(90deg, #ffcc00 0%, #b8ff33 100%);
+    border: none;
+    border-radius: 25px;
+    color: #1a1a1a;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 20px rgba(255, 204, 0, 0.4);
+    margin-bottom: 18px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  
+  .btn-login:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(255, 204, 0, 0.6);
+  }
+  
+  .create-account {
+    text-align: center;
+  }
+  
+  .create-account a {
+    color: #ffcc00;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  
+  .create-account a:hover {
+    color: #b8ff33;
+    text-decoration: underline;
+  }
+  
+  @media (max-width: 768px) {
+    .auth-container {
+      flex-direction: column;
+    }
+    .auth-left {
+      min-height: 200px;
+    }
+    .logo-section {
+      top: 20px;
+      left: 20px;
+    }
+  }
+  /* ===== Light/Dark mode improvements for auth pages ===== */
+  body:not(.dark-mode) .auth-card {
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(15, 100, 51, 0.18);
+  }
+  body:not(.dark-mode) .auth-card h1 { color: #0f6433; }
+  body:not(.dark-mode) .auth-card .subtitle { color: #475569; }
+  body:not(.dark-mode) .input-group-custom label { color: #334155; }
+  body:not(.dark-mode) .remember-me { color: #334155; }
+  body:not(.dark-mode) .forgot-link { color: #0f6433; }
+  body:not(.dark-mode) .input-with-icon i { color: #64748b; }
+  body:not(.dark-mode) .input-with-icon input {
+    background: rgba(255, 255, 255, 0.85);
+    color: #0f172a;
+    border-color: rgba(15, 100, 51, 0.25);
+  }
+  body:not(.dark-mode) .input-with-icon input::placeholder { color: #64748b; }
+  body:not(.dark-mode) .btn-login {
+    background: linear-gradient(135deg, rgba(15, 100, 51, 0.95), rgba(20, 128, 75, 0.95));
+  }
+  body.dark-mode .auth-card h1 { color: #ffffff; }
+  body.dark-mode .auth-card .subtitle { color: #a0a0a0; }
+  body.dark-mode .input-group-custom label { color: #c0c0c0; }
+  body.dark-mode .remember-me { color: #c0c0c0; }
+  body.dark-mode .input-with-icon input { color: #ffffff; }
+  body.dark-mode .auth-card {
+    background: rgba(42, 51, 72, 0.88);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  }
+  body.dark-mode .input-with-icon input {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.22);
+  }
+
+</style>
+
+<!-- Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<div class="logo-section">
+  <h2>🔐 KeepIT</h2>
+</div>
+
+<div class="auth-container">
+  <div class="auth-card">
+      <h1>Login</h1>
+      <p class="subtitle">
+        Welcome back! Please login with your credentials
+      </p>
+      
+      <form action="/login" method="POST">
+        <div class="input-group-custom">
+          <label>Email Address</label>
+          <div class="input-with-icon">
+            <i class="fas fa-envelope"></i>
+            <input type="email" name="email" required placeholder="Justine@ghostlamp.io">
+          </div>
+        </div>
+        
+        <div class="input-group-custom">
+          <label>Password</label>
+          <div class="input-with-icon">
+            <i class="fas fa-lock"></i>
+            <input type="password" name="password" required placeholder="••••••••">
+          </div>
+        </div>
+        
+        <div class="remember-forgot">
+          <label class="remember-me">
+            <input type="checkbox" name="remember">
+            <span>Remember Me</span>
+          </label>
+          <a href="#" class="forgot-link">Forgot Password?</a>
+        </div>
+        
+        <button type="submit" class="btn-login">Login Now</button>
+      </form>
+      
+      <div class="create-account">
+        <a href="/register">Create Account</a>
       </div>
-
-      <div class="mb-3">
-        <label class="form-label">Password</label>
-        <input required name="password" type="password" class="form-control" placeholder="Enter password">
-      </div>
-
-      <button class="btn btn-primary w-100">Login</button>
-    </form>
-
-    <p class="text-center small-muted mt-3">Don’t have an account? <a href="/register">Register</a></p>
   </div>
 </div>
 

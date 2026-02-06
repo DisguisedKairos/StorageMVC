@@ -1,0 +1,81 @@
+<%- include("partials/header", { title: "Chats", bodyClass: "dashboard-bg" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5">
+  <div class="page-header">
+    <div>
+      <h2 class="mb-1">Chats</h2>
+      <p>Conversation threads for your bookings.</p>
+    </div>
+  </div>
+
+  <div class="card shadow-soft">
+    <div class="card-body">
+      <div class="list-group mb-3">
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fw-semibold">Admin Support</div>
+            <div class="text-muted small">Chat with admin for help and issues</div>
+          </div>
+          <a class="btn btn-sm btn-outline-primary" href="/help">Open Help</a>
+        </div>
+        <% if (helpMessages && helpMessages.length > 0) { %>
+          <% helpMessages.forEach(h => { %>
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <div class="fw-semibold"><%= h.subject %></div>
+                <div class="text-muted small"><%= h.status %> • <%= new Date(h.created_at).toLocaleString() %></div>
+              </div>
+              <a class="btn btn-sm btn-outline-secondary" href="/help">View</a>
+            </div>
+          <% }) %>
+        <% } %>
+      </div>
+
+      <% if (!threads || threads.length === 0) { %>
+        <div class="text-muted">No provider chat threads yet. Start a chat from your bookings below.</div>
+        <% if (bookings && bookings.length > 0) { %>
+          <div class="list-group mt-3">
+            <% bookings.forEach(b => { %>
+              <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="fw-semibold"><%= b.storage_title || ('Booking #' + b.booking_id) %></div>
+                  <div class="text-muted small"><%= b.location || '' %></div>
+                  <div class="text-muted small">
+                    <% if (role === 'customer') { %>
+                      Provider: <%= b.provider_name || 'Provider' %>
+                    <% } else { %>
+                      Customer: <%= b.customer_name || 'Customer' %>
+                    <% } %>
+                  </div>
+                </div>
+                <a class="btn btn-sm btn-outline-primary" href="<%= role === 'customer' ? '/chat/' + b.booking_id : '/provider/chat/' + b.booking_id %>">Start Chat</a>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      <% } else { %>
+        <div class="list-group">
+          <% threads.forEach(t => { %>
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <div class="fw-semibold"><%= t.storage_title || ('Booking #' + t.booking_id) %></div>
+                <div class="text-muted small"><%= t.location || '' %></div>
+                <div class="text-muted small">
+                  <% if (role === 'customer') { %>
+                    Provider: <%= t.provider_name || 'Provider' %>
+                  <% } else { %>
+                    Customer: <%= t.customer_name || 'Customer' %>
+                  <% } %>
+                </div>
+              </div>
+              <a class="btn btn-sm btn-outline-primary" href="<%= role === 'customer' ? '/chat/' + t.booking_id : '/provider/chat/' + t.booking_id %>">Open Chat</a>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<%- include("partials/footer") %>

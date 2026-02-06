@@ -1,12 +1,18 @@
 /* COMMON BACKGROUND FOR ALL PAGES */
 body {
+  position: relative;
   margin: 0;
   min-height: 100vh;
   font-family: "Poppins", sans-serif;
   background: url('/images/storage-bg.jpg') no-repeat center center fixed;
   background-size: cover;
   background-position: center;
-  position: relative;
+}
+
+.dashboard-bg {
+  background: url('/images/dashboardBG.png') no-repeat center center fixed;
+  background-size: cover;
+  background-position: center;
 }
 
 /* Dark overlay for readability */
@@ -16,10 +22,22 @@ body::before {
   inset: 0;
   background: rgba(0, 0, 0, 0.35);
   z-index: 0;
+  pointer-events: none;
 }
 
 /* Ensure all content stays above overlay */
 body > * {
   position: relative;
   z-index: 1;
+}
+
+/* Navbar dropdown menu z-index fix */
+.navbar {
+  position: relative;
+  z-index: 1000;
+}
+
+.navbar .dropdown-menu {
+  position: fixed;
+  z-index: 1050;
 }

@@ -1,0 +1,49 @@
+<%- include("partials/header", { title: "My Listings" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">My Storage Listings</h3>
+    <a class="btn btn-dark" href="/provider/storage/add">Add Listing</a>
+  </div>
+
+  <% if (!storage || storage.length === 0) { %>
+    <div class="alert alert-light">No listings yet.</div>
+  <% } else { %>
+    <div class="table-responsive card shadow-soft p-3">
+      <table class="table align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Image</th>
+            <th>Title</th>
+            <th>Type</th>
+            <th>Location</th>
+            <th>Units</th>
+            <th>Price/day</th>
+            <th class="text-end"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% storage.forEach(s => { %>
+            <tr>
+              <td>
+                <img src="<%= s.primary_image || '/images/storageBG.png' %>" alt="Storage" style="width:70px;height:52px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;">
+              </td>
+              <td class="fw-semibold"><%= s.title %></td>
+              <td><%= (s.storage_type || 'physical').toUpperCase() %></td>
+              <td><%= s.location || 'N/A' %></td>
+              <td><%= s.available_units %>/<%= s.total_units %></td>
+              <td>$<%= s.price_per_day || s.price %></td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-primary" href="/provider/storage/edit/<%= s.storage_id %>">Edit</a>
+                <a class="btn btn-sm btn-outline-danger" href="/provider/storage/delete/<%= s.storage_id %>" onclick="return confirm('Delete this listing?')">Delete</a>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<%- include("partials/footer") %>

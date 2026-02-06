@@ -1,0 +1,112 @@
+<%- include("partials/header", { title: "My Wallet", bodyClass: "dashboard-bg" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">My E-Wallet</h3>
+    <a href="/storage" class="btn btn-outline-primary btn-sm">Back to Browse</a>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card shadow-soft">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Account Overview</h5>
+
+          <div class="alert alert-info">
+            <div class="fw-semibold">Current Balance</div>
+            <div style="font-size: 2rem; font-weight: bold; margin: 0.5rem 0;">
+              SGD $<%= Number(balance).toFixed(2) %>
+            </div>
+            <small>Available for storage bookings</small>
+          </div>
+
+          <h6 class="mt-4 mb-3">About Your E-Wallet</h6>
+          <ul class="small text-muted">
+            <li>💰 Use for instant payments on storage bookings</li>
+            <li>🔒 Secure and encrypted transactions</li>
+            <li>📱 Support from multiple payment providers</li>
+            <li>📋 Complete transaction history</li>
+            <li>♻️ Balance never expires</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card shadow-soft">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Quick Actions</h5>
+          <div class="d-grid gap-2">
+            <a href="/wallet/topup" class="btn btn-primary btn-lg">
+              <i class="bi bi-plus-circle"></i> Add Funds
+            </a>
+            <a href="/wallet/history" class="btn btn-outline-primary">
+              <i class="bi bi-clock-history"></i> View History
+            </a>
+            <a href="/storage" class="btn btn-outline-primary">
+              <i class="bi bi-bag-check"></i> Browse Storage
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Transactions -->
+  <div class="row mt-4">
+    <div class="col-lg-12">
+      <div class="card shadow-soft">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">Recent Transactions</h5>
+        </div>
+        <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+          <% if (transactions && transactions.length > 0) { %>
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Date & Time</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th class="text-end">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% transactions.slice(0, 10).forEach(tx => { %>
+                    <tr>
+                      <td>
+                        <small><%= tx.created_at_display || 'N/A' %></small>
+                      </td>
+                      <td>
+                        <% if (tx.type === 'topup') { %>
+                          <span class="badge bg-success">Top-up</span>
+                        <% } else if (tx.type === 'purchase') { %>
+                          <span class="badge bg-warning">Purchase</span>
+                        <% } else { %>
+                          <span class="badge bg-info">Refund</span>
+                        <% } %>
+                      </td>
+                      <td><%= tx.description %></td>
+                      <td class="text-end fw-semibold <%= tx.type === 'purchase' ? 'text-danger' : 'text-success' %>">
+                        <%= tx.type === 'purchase' ? '-' : '+' %>SGD $<%= Number(tx.amount).toFixed(2) %>
+                      </td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          <% } else { %>
+            <div class="text-center py-5 text-muted">
+              <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+              <p class="mt-2">No transactions yet</p>
+              <a href="/wallet/topup" class="btn btn-sm btn-primary">Add Funds Now</a>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include("partials/footer") %>
