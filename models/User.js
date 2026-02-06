@@ -27,9 +27,18 @@ module.exports = {
 
     findById: (id, callback) => {
         db.query(
-            `SELECT user_id, name, email, role FROM users WHERE user_id = ?`,
+            `SELECT user_id, name, email, role, profile_image, phone, address FROM users WHERE user_id = ?`,
             [id],
-            callback
+            (err, rows) => {
+                if (err && err.code === "ER_BAD_FIELD_ERROR") {
+                    return db.query(
+                        `SELECT user_id, name, email, role FROM users WHERE user_id = ?`,
+                        [id],
+                        callback
+                    );
+                }
+                return callback(err, rows);
+            }
         );
     },
 
@@ -62,6 +71,45 @@ module.exports = {
             [data.name, data.email, data.role, id],
             callback
         );
+    },
+
+    updateProfile: (id, data, callback) => {
+        const buildQuery = (includeProfile) => {
+            const fields = ["name = ?", "email = ?"];
+            const params = [data.name, data.email];
+
+            if (data.password) {
+                fields.push("password_hash = SHA1(?)");
+                params.push(data.password);
+            }
+
+            if (includeProfile && typeof data.profileImage !== "undefined") {
+                fields.push("profile_image = ?");
+                params.push(data.profileImage || null);
+            }
+
+            if (includeProfile && typeof data.phone !== "undefined") {
+                fields.push("phone = ?");
+                params.push(data.phone || null);
+            }
+
+            if (includeProfile && typeof data.address !== "undefined") {
+                fields.push("address = ?");
+                params.push(data.address || null);
+            }
+
+            params.push(id);
+            return { sql: `UPDATE users SET ${fields.join(", ")} WHERE user_id = ?`, params };
+        };
+
+        const first = buildQuery(true);
+        db.query(first.sql, first.params, (err) => {
+            if (err && err.code === "ER_BAD_FIELD_ERROR") {
+                const fallback = buildQuery(false);
+                return db.query(fallback.sql, fallback.params, callback);
+            }
+            return callback(err);
+        });
     },
 
     remove: (id, callback) => {

@@ -39,4 +39,12 @@ module.exports = {
       callback
     );
   },
+
+  setStatusByUserId: ({ userId, status, adminId }, callback) => {
+    db.query(
+      `UPDATE kyc_requests SET status = ?, reviewed_by = ?, updated_at = NOW() WHERE user_id = ?`,
+      [status, adminId || null, userId],
+      callback
+    );
+  },
 };
