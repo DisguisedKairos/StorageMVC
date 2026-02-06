@@ -280,7 +280,7 @@ module.exports = {
     if (guard) return;
 
     const sql = `
-      SELECT b.booking_id, b.start_date, b.end_date, b.status,
+      SELECT b.booking_id, b.quantity, b.start_date, b.end_date, b.status,
              s.title AS storage_title, u.name AS customer_name
       FROM bookings b
       JOIN storage_spaces s ON s.storage_id = b.storage_id

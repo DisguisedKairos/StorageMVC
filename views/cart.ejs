@@ -33,7 +33,13 @@
                   <div class="small text-muted"><%= i.size %></div>
                 </td>
                 <td><%= i.location || 'N/A' %></td>
-                <td><%= i.quantity %></td>
+                <td>
+                  <form action="/cart/update" method="POST" class="d-flex align-items-center gap-2" style="max-width: 150px;">
+                    <input type="hidden" name="storage_id" value="<%= i.storage_id %>">
+                    <input type="number" name="quantity" value="<%= i.quantity %>" min="1" max="10" class="form-control form-control-sm" style="width: 70px;">
+                    <button class="btn btn-sm btn-outline-secondary" type="submit">Update</button>
+                  </form>
+                </td>
                 <td class="text-end">$<%= Number(i.unit_price).toFixed(2) %></td>
                 <td class="text-end">$<%= (Number(i.unit_price) * Number(i.quantity)).toFixed(2) %></td>
                 <td class="text-end">

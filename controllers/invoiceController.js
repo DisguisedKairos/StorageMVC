@@ -59,42 +59,28 @@ function checkStockAvailability(items, startDate, endDate, callback) {
   if (!items || items.length === 0) return callback(null, true);
   const db = require("../config/db");
   if (!startDate || !endDate) return callback(new Error("Invalid dates"));
-  
+
   const ids = [...new Set(items.map((i) => i.storage_id))];
   if (ids.length === 0) return callback(null, true);
-  
-  // Check for overlapping bookings during requested date range
+
   db.query(
-    `SELECT storage_id, COUNT(*) as overlap_count FROM bookings 
-     WHERE storage_id IN (?) 
-     AND status IN ('confirmed', 'active') 
-     AND start_date <= ? AND end_date >= ?
-     GROUP BY storage_id`,
-    [ids, endDate, startDate],
-    (err, overlaps) => {
-      if (err) return callback(err);
-      
-      const overlapMap = new Map((overlaps || []).map((o) => [o.storage_id, Number(o.overlap_count)]));
-      
-      db.query(
-        `SELECT storage_id, total_units FROM storage_spaces WHERE storage_id IN (?)`,
-        [ids],
-        (errUnits, units) => {
-          if (errUnits) return callback(errUnits);
-          const unitsMap = new Map((units || []).map((u) => [u.storage_id, Number(u.total_units ?? 1)]));
-          
-          for (const it of items) {
-            const totalSlots = unitsMap.has(it.storage_id) ? unitsMap.get(it.storage_id) : 1;
-            const activeBookings = overlapMap.has(it.storage_id) ? overlapMap.get(it.storage_id) : 0;
-            const availableSlots = totalSlots - activeBookings;
-            
-            if (availableSlots < it.quantity) {
-              return callback(new Error(`Insufficient availability for storage #${it.storage_id} (need ${it.quantity}, available ${availableSlots})`));
-            }
-          }
-          return callback(null, true);
+    `SELECT storage_id, available_units FROM storage_spaces WHERE storage_id IN (?)`,
+    [ids],
+    (errUnits, units) => {
+      if (errUnits) return callback(errUnits);
+      const unitsMap = new Map((units || []).map((u) => [u.storage_id, Number(u.available_units ?? 0)]));
+
+      for (const it of items) {
+        const availableSlots = unitsMap.has(it.storage_id) ? unitsMap.get(it.storage_id) : 0;
+        if (availableSlots < it.quantity) {
+          return callback(
+            new Error(
+              `Insufficient availability for storage #${it.storage_id} (need ${it.quantity}, available ${availableSlots})`
+            )
+          );
         }
-      );
+      }
+      return callback(null, true);
     }
   );
 }

@@ -151,3 +151,12 @@ CREATE TABLE IF NOT EXISTS admin_notifications (
   KEY idx_admin_notif_provider (provider_id),
   KEY idx_admin_notif_type (type)
 );
+
+/* ========================================
+   FIX: Add quantity column to bookings table
+   ======================================== */
+
+-- Add quantity column to bookings table to track how many units are booked
+-- This is essential for proper availability checking
+ALTER TABLE bookings
+  ADD COLUMN quantity INT NOT NULL DEFAULT 1 AFTER storage_id;

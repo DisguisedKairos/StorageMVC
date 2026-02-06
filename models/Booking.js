@@ -15,6 +15,7 @@ module.exports = {
                 b.booking_id,
                 b.user_id,
                 b.storage_id,
+                b.quantity,
                 b.start_date,
                 b.end_date,
                 b.total_price,

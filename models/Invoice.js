@@ -78,8 +78,8 @@ module.exports = {
         if (txErr) return callback(txErr);
 
         const bookingSql = `
-          INSERT INTO bookings (user_id, storage_id, start_date, end_date, total_price, status)
-          VALUES (?, ?, ?, ?, ?, 'Paid')
+          INSERT INTO bookings (user_id, storage_id, quantity, start_date, end_date, total_price, status)
+          VALUES (?, ?, ?, ?, ?, ?, 'Paid')
         `;
 
         const created = [];
@@ -104,7 +104,7 @@ module.exports = {
           const it = lineItems[i++];
           db.query(
             bookingSql,
-            [userId, it.storage_id, startDate, endDate, it.subtotal],
+            [userId, it.storage_id, it.quantity, startDate, endDate, it.subtotal],
             (bErr, bRes) => {
               if (bErr) return db.rollback(() => callback(bErr));
               const bookingId = bRes.insertId;
@@ -286,8 +286,8 @@ module.exports = {
           }
 
           const bookingSql = `
-            INSERT INTO bookings (user_id, storage_id, start_date, end_date, total_price, status)
-            VALUES (?, ?, ?, ?, ?, 'Paid')
+            INSERT INTO bookings (user_id, storage_id, quantity, start_date, end_date, total_price, status)
+            VALUES (?, ?, ?, ?, ?, ?, 'Paid')
           `;
           const paymentSql = `
             INSERT INTO payments (booking_id, amount, method, payment_date)
@@ -300,7 +300,7 @@ module.exports = {
             const it = items[i++];
             db.query(
               bookingSql,
-              [userId, it.storage_id, it.start_date, it.end_date, it.subtotal],
+              [userId, it.storage_id, it.quantity, it.start_date, it.end_date, it.subtotal],
               (bErr, bRes) => {
                 if (bErr) return db.rollback(() => callback(bErr));
                 const bookingId = bRes.insertId;

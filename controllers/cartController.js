@@ -1,4 +1,5 @@
 const Cart = require("../models/Cart");
+const Storage = require("../models/Storage");
 
 function requireCustomer(req, res) {
   if (!req.session.user) return res.redirect("/login");
@@ -33,7 +34,24 @@ module.exports = {
     const userId = req.session.user.id;
     const storageId = parseInt(req.body.storage_id, 10);
     const quantity = Math.max(1, parseInt(req.body.quantity, 10) || 1);
-    Cart.updateQuantity(userId, storageId, quantity, () => res.redirect("/cart"));
+    if (!storageId) return res.redirect("/cart");
+
+    Storage.findById(storageId, (err, rows) => {
+      if (err) return res.status(500).send("Database error");
+      const storage = rows && rows[0];
+      if (!storage) return res.status(404).send("Storage not found");
+
+      const availableSlots = Number(storage.available_units ?? 0);
+      if (availableSlots < quantity) {
+        return res
+          .status(400)
+          .send(
+            `Insufficient availability for storage #${storageId} (need ${quantity}, available ${availableSlots})`
+          );
+      }
+
+      Cart.updateQuantity(userId, storageId, quantity, () => res.redirect("/cart"));
+    });
   },
 
   remove: (req, res) => {
