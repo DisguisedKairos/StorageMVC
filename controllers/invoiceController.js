@@ -1,6 +1,7 @@
 const Cart = require("../models/Cart");
 const Invoice = require("../models/Invoice");
 const User = require("../models/User");
+const LoyaltyPoints = require("../models/LoyaltyPoints");
 
 function parseDateOnly(str) {
   const d = new Date(`${str}T00:00:00`);
@@ -54,23 +55,46 @@ function requireCustomer(req, res) {
   if (req.session.user.role !== "customer") return res.status(403).send("Not authorized");
 }
 
-function checkStockAvailability(items, callback) {
+function checkStockAvailability(items, startDate, endDate, callback) {
   if (!items || items.length === 0) return callback(null, true);
   const db = require("../config/db");
+  if (!startDate || !endDate) return callback(new Error("Invalid dates"));
+  
   const ids = [...new Set(items.map((i) => i.storage_id))];
+  if (ids.length === 0) return callback(null, true);
+  
+  // Check for overlapping bookings during requested date range
   db.query(
-    `SELECT storage_id, available_units FROM storage_spaces WHERE storage_id IN (?)`,
-    [ids],
-    (err, rows) => {
+    `SELECT storage_id, COUNT(*) as overlap_count FROM bookings 
+     WHERE storage_id IN (?) 
+     AND status IN ('confirmed', 'active') 
+     AND start_date <= ? AND end_date >= ?
+     GROUP BY storage_id`,
+    [ids, endDate, startDate],
+    (err, overlaps) => {
       if (err) return callback(err);
-      const byId = new Map((rows || []).map((r) => [r.storage_id, Number(r.available_units ?? 0)]));
-      for (const it of items) {
-        const avail = byId.has(it.storage_id) ? byId.get(it.storage_id) : 0;
-        if (avail < it.quantity) {
-          return callback(new Error(`Insufficient stock for storage #${it.storage_id}`));
+      
+      const overlapMap = new Map((overlaps || []).map((o) => [o.storage_id, Number(o.overlap_count)]));
+      
+      db.query(
+        `SELECT storage_id, total_units FROM storage_spaces WHERE storage_id IN (?)`,
+        [ids],
+        (errUnits, units) => {
+          if (errUnits) return callback(errUnits);
+          const unitsMap = new Map((units || []).map((u) => [u.storage_id, Number(u.total_units ?? 1)]));
+          
+          for (const it of items) {
+            const totalSlots = unitsMap.has(it.storage_id) ? unitsMap.get(it.storage_id) : 1;
+            const activeBookings = overlapMap.has(it.storage_id) ? overlapMap.get(it.storage_id) : 0;
+            const availableSlots = totalSlots - activeBookings;
+            
+            if (availableSlots < it.quantity) {
+              return callback(new Error(`Insufficient availability for storage #${it.storage_id} (need ${it.quantity}, available ${availableSlots})`));
+            }
+          }
+          return callback(null, true);
         }
-      }
-      return callback(null, true);
+      );
     }
   );
 }
@@ -163,7 +187,7 @@ module.exports = {
       return computeCartTotals(userId, start_date, end_date, (err, summary) => {
         if (err) return res.status(400).send(err.message || "Checkout failed");
 
-        checkStockAvailability(summary.items, (errStock) => {
+        checkStockAvailability(summary.items, start_date, end_date, (errStock) => {
           if (errStock) return res.status(400).send(errStock.message || "Insufficient stock");
 
           const totalAmount = Number(summary.totalAmount) || 0;
@@ -175,24 +199,60 @@ module.exports = {
               if (errInv) return res.status(400).send(errInv.message || "Checkout failed");
 
               decrementStock(summary.items, () => {});
-              User.adjustWalletBalance(userId, -totalAmount, () => {});
+              
+              // Update wallet balance and ensure session is saved before rendering
+              User.adjustWalletBalance(userId, -totalAmount, (errAdj, newBalance) => {
+                if (!errAdj && newBalance !== undefined) {
+                  req.session.user.walletBalance = newBalance;
+                  req.session.user.wallet_balance = newBalance;
+                }
 
-              data.header.subtotal = Number(data.header.subtotal) || 0;
-              data.header.tax = Number(data.header.tax) || 0;
-              data.header.totalAmount = Number(data.header.totalAmount) || 0;
-              data.items = (data.items || []).map((it) => ({
-                ...it,
-                unit_price: Number(it.unit_price) || 0,
-                subtotal: Number(it.subtotal) || 0,
-                quantity: parseInt(it.quantity, 10) || 0,
-                days: parseInt(it.days, 10) || 0
-              }));
+                // Record wallet transaction for this purchase
+                const WalletTransaction = require("../models/WalletTransaction");
+                const description = `Payment for booking from ${start_date} to ${end_date}`;
+                WalletTransaction.create({
+                  user_id: userId,
+                  type: "purchase",
+                  amount: totalAmount,
+                  description: description,
+                  status: "completed"
+                }, (errTx) => {
+                  if (errTx) console.error("Error recording wallet transaction:", errTx);
+                  
+                  // Award loyalty points after successful payment
+                  LoyaltyPoints.awardPoints(
+                    userId,
+                    totalAmount,
+                    `BOOKING-${Date.now()}`,
+                    `Earned from booking ${start_date} to ${end_date}`,
+                    (errLoyalty) => {
+                      if (errLoyalty) console.error("Error awarding loyalty points:", errLoyalty);
+                      
+                      // Save session and then render
+                      req.session.save((saveErr) => {
+                        if (saveErr) console.error("Session save error:", saveErr);
+                        
+                        data.header.subtotal = Number(data.header.subtotal) || 0;
+                        data.header.tax = Number(data.header.tax) || 0;
+                        data.header.totalAmount = Number(data.header.totalAmount) || 0;
+                        data.items = (data.items || []).map((it) => ({
+                          ...it,
+                          unit_price: Number(it.unit_price) || 0,
+                          subtotal: Number(it.subtotal) || 0,
+                          quantity: parseInt(it.quantity, 10) || 0,
+                          days: parseInt(it.days, 10) || 0
+                        }));
 
-              return res.render("invoice", {
-                user: req.session.user,
-                header: data.header,
-                items: data.items,
-                paymentMethod: "EWallet"
+                        return res.render("invoice", {
+                          user: req.session.user,
+                          header: data.header,
+                          items: data.items,
+                          paymentMethod: "EWallet"
+                        });
+                      });
+                    }
+                  );
+                });
               });
             });
           });
@@ -200,7 +260,7 @@ module.exports = {
       });
     }
 
-    if (paymentMethod === "PayPal" || paymentMethod === "NETSQR" || paymentMethod === "Stripe") {
+    if (paymentMethod === "PayPal" || paymentMethod === "NETSQR" || paymentMethod === "Stripe" || paymentMethod === "PayNow") {
       // Store pending payment info in session until provider confirms payment
       req.session.pendingPayment = {
         method: paymentMethod,
@@ -212,8 +272,20 @@ module.exports = {
 
       return computeCartTotals(userId, start_date, end_date, async (err, summary) => {
         if (err) return res.status(400).send(err.message || "Checkout failed");
-        checkStockAvailability(summary.items, (errStock) => {
+        checkStockAvailability(summary.items, start_date, end_date, async (errStock) => {
           if (errStock) return res.status(400).send(errStock.message || "Insufficient stock");
+
+          if (paymentMethod === "PayNow") {
+            return res.render("paynow_topup", {
+              user: req.session.user,
+              amount: Number(summary.totalAmount) || 0,
+              pageTitle: "PayNow Payment",
+              heading: "PayNow Checkout",
+              confirmUrl: "/payment/paynow/finalize",
+              backUrl: "/payment",
+              reference: `BOOKING-${req.session.user.id}`
+            });
+          }
 
           if (paymentMethod === "PayPal") {
             return res.render("paypal_checkout", {
@@ -260,7 +332,7 @@ module.exports = {
 
     computeCartTotals(userId, start_date, end_date, (errSum, summary) => {
       if (errSum) return res.status(400).send(errSum.message || "Checkout failed");
-      checkStockAvailability(summary.items, (errStock) => {
+      checkStockAvailability(summary.items, start_date, end_date, (errStock) => {
         if (errStock) return res.status(400).send(errStock.message || "Insufficient stock");
 
         Invoice.createFromCart(userId, start_date, end_date, paymentMethod, (err, data) => {
@@ -377,7 +449,7 @@ module.exports = {
         return computeCartTotals(user.id, pending.start_date, pending.end_date, (errT, summary) => {
           if (errT) return res.status(400).json({ error: errT.message || "Checkout failed" });
 
-          checkStockAvailability(summary.items, (errStock) => {
+          checkStockAvailability(summary.items, pending.start_date, pending.end_date, (errStock) => {
             if (errStock) return res.status(400).json({ error: errStock.message || "Insufficient stock" });
 
           const expected = Number(summary.totalAmount || 0);
@@ -412,7 +484,18 @@ module.exports = {
               req.session.lastInvoice = data;
               delete req.session.pendingPayment;
               decrementStock(summary.items, () => {});
-              return res.json({ ok: true, redirect: "/payment/success" });
+              
+              // Award loyalty points after successful payment
+              LoyaltyPoints.awardPoints(
+                user.id,
+                data.header.totalAmount,
+                `INVOICE-${data.header.invoice_id}`,
+                `Earned from PayPal payment on invoice ${data.header.invoice_id}`,
+                (errLoyalty) => {
+                  if (errLoyalty) console.error("Error awarding loyalty points:", errLoyalty);
+                  return res.json({ ok: true, redirect: "/payment/success" });
+                }
+              );
             }
           );
           });
@@ -451,7 +534,7 @@ module.exports = {
         return computeCartTotals(user.id, pending.start_date, pending.end_date, (errT, summary) => {
           if (errT) return res.redirect("/payment");
 
-          checkStockAvailability(summary.items, (errStock) => {
+          checkStockAvailability(summary.items, pending.start_date, pending.end_date, (errStock) => {
             if (errStock) return res.redirect("/payment");
 
           const expectedCents = Math.round(Number(summary.totalAmount || 0) * 100);
@@ -480,7 +563,18 @@ module.exports = {
               req.session.lastInvoice = data;
               delete req.session.pendingPayment;
               decrementStock(summary.items, () => {});
-              return res.redirect("/payment/success");
+              
+              // Award loyalty points after successful payment
+              LoyaltyPoints.awardPoints(
+                user.id,
+                data.header.totalAmount,
+                `INVOICE-${data.header.invoice_id}`,
+                `Earned from Stripe payment on invoice ${data.header.invoice_id}`,
+                (errLoyalty) => {
+                  if (errLoyalty) console.error("Error awarding loyalty points:", errLoyalty);
+                  return res.redirect("/payment/success");
+                }
+              );
             }
           );
           });
@@ -649,7 +743,18 @@ module.exports = {
         computeCartTotals(user.id, pending.start_date, pending.end_date, (errSum, summary) => {
           if (!errSum) decrementStock(summary.items, () => {});
         });
-        return res.json({ ok: true });
+        
+        // Award loyalty points after successful NETS payment
+        LoyaltyPoints.awardPoints(
+          user.id,
+          data.header.totalAmount,
+          `INVOICE-${data.header.invoice_id}`,
+          `Earned from NETSQR payment on invoice ${data.header.invoice_id}`,
+          (errLoyalty) => {
+            if (errLoyalty) console.error("Error awarding loyalty points:", errLoyalty);
+            return res.json({ ok: true });
+          }
+        );
       }
     );
   },
@@ -665,6 +770,51 @@ module.exports = {
       console.error("NETS webhook error:", e);
       return res.status(200).json({ ok: true });
     }
+  },
+
+  /**
+   * POST /payment/paynow/finalize - Complete PayNow checkout
+   */
+  payNowFinalize: (req, res) => {
+    const user = req.session.user;
+    const pending = req.session.pendingPayment;
+    if (!user) return res.status(401).json({ ok: false, error: "Not logged in" });
+    if (!pending || pending.method !== "PayNow") {
+      return res.status(400).json({ ok: false, error: "No pending PayNow payment" });
+    }
+
+    computeCartTotals(user.id, pending.start_date, pending.end_date, (errT, summary) => {
+      if (errT) return res.status(400).json({ ok: false, error: errT.message || "Checkout failed" });
+
+      checkStockAvailability(summary.items, pending.start_date, pending.end_date, (errStock) => {
+        if (errStock) return res.status(400).json({ ok: false, error: errStock.message || "Insufficient stock" });
+
+        Invoice.createFromCart(
+          user.id,
+          pending.start_date,
+          pending.end_date,
+          "PayNow",
+          (err, data) => {
+            if (err) return res.status(400).json({ ok: false, error: err.message || "checkout_failed" });
+
+            req.session.lastInvoice = data;
+            delete req.session.pendingPayment;
+            decrementStock(summary.items, () => {});
+
+            LoyaltyPoints.awardPoints(
+              user.id,
+              data.header.totalAmount,
+              `INVOICE-${data.header.invoice_id}`,
+              `Earned from PayNow payment on invoice ${data.header.invoice_id}`,
+              (errLoyalty) => {
+                if (errLoyalty) console.error("Error awarding loyalty points:", errLoyalty);
+                return res.json({ ok: true, redirect: "/payment/success" });
+              }
+            );
+          }
+        );
+      });
+    });
   },
 
   // GET /invoice/:id
@@ -746,6 +896,7 @@ module.exports = {
         const bookingRows = (rows || []).map((r) => ({
           type: "Booking",
           id: r.booking_id,
+          storageId: r.storage_id,
           ref: `BOOKING-${r.booking_id}`,
           title: r.title || `Storage #${r.storage_id}`,
           location: r.location || "N/A",

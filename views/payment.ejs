@@ -107,13 +107,13 @@
 
                 <label class="list-group-item d-flex gap-3 align-items-center">
                   <input class="form-check-input" type="radio" name="paymentMethod" value="EWallet"
-                    <%= selectedMethod === 'EWallet' ? 'checked' : '' %>
-                    <%= (walletBalance || 0) < Number(totalAmount || 0) ? 'disabled' : '' %>>
+                    <%= selectedMethod === 'EWallet' ? 'checked' : '' %>>
                   <div>
                     <div class="fw-semibold">E-Wallet</div>
                     <small class="text-muted">
                       Pay using wallet balance (available $<%= Number(walletBalance || 0).toFixed(2) %>)
                     </small>
+                    <div class="small text-muted">Balance is validated on submit.</div>
                   </div>
                 </label>
 

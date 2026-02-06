@@ -1,0 +1,77 @@
+<%- include("partials/header", { title: pageTitle || "PayNow Wallet Top-up" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card shadow-soft">
+        <div class="card-body text-center">
+          <h5 class="card-title mb-4"><%= heading || "PayNow Wallet Top-up" %></h5>
+          
+          <div class="alert alert-info">
+            <div class="fw-semibold">Top-up Amount</div>
+            <div style="font-size: 2rem; font-weight: bold; margin: 0.5rem 0;">
+              SGD $<%= Number(amount).toFixed(2) %>
+            </div>
+          </div>
+
+          <div class="alert alert-warning">
+            <strong>📱 PayNow Instructions:</strong>
+            <ol class="text-start mt-3 mb-0">
+              <li>Open your bank's mobile app or PayNow platform</li>
+              <li>Select PayNow transfer</li>
+              <li>Enter UEN: <code>123456789A</code></li>
+              <li>Enter amount: <code>SGD $<%= Number(amount).toFixed(2) %></code></li>
+              <li>Reference: <code><%= reference || ("#" + user.id) %></code></li>
+              <li>Submit payment and confirm</li>
+            </ol>
+          </div>
+
+          <div class="my-4 p-4 border border-2 rounded" style="background: #f8f9fa;">
+            <div class="fw-semibold mb-2">PayNow QR Code</div>
+            <div class="text-muted mb-3">(Scan to pay directly)</div>
+            <div style="background: white; padding: 1rem; border-radius: 0.5rem; display: inline-block;">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=000201021221123456789A520010SG.PAYNOW.001201003030012<%= user.id %>&curs=SGD&amt=<%= Number(amount).toFixed(2) %>" alt="PayNow QR Code" width="200" height="200" style="border: 1px solid #ddd; border-radius: 0.25rem;">
+            </div>
+          </div>
+
+          <p class="text-muted small mt-4">
+            Your payment will be processed immediately after transfer confirmation.
+          </p>
+
+          <button class="btn btn-primary mt-3" onclick="finalizePayNowTopup()">Confirm Payment Complete</button>
+          <a href="<%= backUrl || '/wallet/topup' %>" class="btn btn-link">Change Method</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include("partials/footer") %>
+
+<script>
+  function finalizePayNowTopup() {
+    if (!confirm('Have you completed the PayNow transfer?')) {
+      return;
+    }
+    
+    fetch('<%= confirmUrl || "/wallet/paynow/finalize" %>', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.ok) {
+        window.location.href = data.redirect;
+      } else {
+        alert('Error: ' + (data.error || 'Failed to complete top-up'));
+      }
+    })
+    .catch(err => {
+      console.error('Error:', err);
+      alert('Error completing payment');
+    });
+  }
+</script>
