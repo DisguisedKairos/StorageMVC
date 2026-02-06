@@ -629,6 +629,13 @@ app.post("/admin/help/:id/reply", (req, res) => {
   }
   helpController.adminReply(req, res);
 });
+app.post("/admin/help/:id/delete", (req, res) => {
+  if (!req.session.user) return res.redirect("/login");
+  if (req.session.user.role !== "admin") {
+    return res.status(403).send("Not authorized");
+  }
+  helpController.adminDelete(req, res);
+});
 
 /* ---------- ADMIN KYC ---------- */
 app.get("/admin/kyc", (req, res) => {

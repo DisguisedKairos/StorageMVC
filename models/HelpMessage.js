@@ -71,5 +71,29 @@ module.exports = {
       [status || "OPEN", id],
       callback
     );
+  },
+
+  remove: (helpId, callback) => {
+    db.beginTransaction((txErr) => {
+      if (txErr) return callback(txErr);
+      db.query(
+        `DELETE FROM help_message_replies WHERE help_id = ?`,
+        [helpId],
+        (rErr) => {
+          if (rErr) return db.rollback(() => callback(rErr));
+          db.query(
+            `DELETE FROM help_messages WHERE help_id = ?`,
+            [helpId],
+            (hErr) => {
+              if (hErr) return db.rollback(() => callback(hErr));
+              db.commit((cErr) => {
+                if (cErr) return db.rollback(() => callback(cErr));
+                return callback(null, true);
+              });
+            }
+          );
+        }
+      );
+    });
   }
 };

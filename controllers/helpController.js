@@ -197,4 +197,17 @@ module.exports = {
       });
     });
   }
+  ,
+
+  adminDelete: (req, res) => {
+    const admin = req.session.user;
+    const helpId = parseInt(req.params.id, 10);
+    if (!admin || admin.role !== "admin") return res.status(403).send("Forbidden");
+    if (Number.isNaN(helpId)) return res.status(400).send("Invalid help id");
+
+    HelpMessage.remove(helpId, (err) => {
+      if (err) return res.status(500).send("Database error");
+      return res.redirect("/admin/help");
+    });
+  }
 };
