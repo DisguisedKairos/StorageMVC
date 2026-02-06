@@ -11,7 +11,7 @@ npm install
 
 4) Start the app:
 ```
-npm start
+node app.js
 ```
 
 Open `http://localhost:3000`.
@@ -30,5 +30,5 @@ Open `http://localhost:3000`.
 
 ## How to run
 ```
-npm start
+node app.js
 ```
