@@ -55,6 +55,9 @@
                   <% if (r.storageId) { %>
                     <a href="/storage/<%= r.storageId %>" class="btn btn-sm btn-outline-danger ms-2">Report</a>
                   <% } %>
+                  <% if (r.type === 'Booking' && r.id) { %>
+                    <a href="/chat/<%= r.id %>" class="btn btn-sm btn-outline-primary ms-2">Chat</a>
+                  <% } %>
                 </td>
               </tr>
             <% }) %>

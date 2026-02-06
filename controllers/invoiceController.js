@@ -246,7 +246,7 @@ module.exports = {
       });
     }
 
-    if (paymentMethod === "PayPal" || paymentMethod === "NETSQR" || paymentMethod === "Stripe") {
+    if (paymentMethod === "PayPal" || paymentMethod === "NETSQR" || paymentMethod === "Stripe" || paymentMethod === "PayNow") {
       // Store pending payment info in session until provider confirms payment
       req.session.pendingPayment = {
         method: paymentMethod,
@@ -260,6 +260,18 @@ module.exports = {
         if (err) return res.status(400).send(err.message || "Checkout failed");
         checkStockAvailability(summary.items, start_date, end_date, async (errStock) => {
           if (errStock) return res.status(400).send(errStock.message || "Insufficient stock");
+
+          if (paymentMethod === "PayNow") {
+            return res.render("paynow_topup", {
+              user: req.session.user,
+              amount: Number(summary.totalAmount) || 0,
+              pageTitle: "PayNow Payment",
+              heading: "PayNow Checkout",
+              confirmUrl: "/payment/paynow/finalize",
+              backUrl: "/payment",
+              reference: `BOOKING-${req.session.user.id}`
+            });
+          }
 
           if (paymentMethod === "PayPal") {
             return res.render("paypal_checkout", {
@@ -744,6 +756,51 @@ module.exports = {
       console.error("NETS webhook error:", e);
       return res.status(200).json({ ok: true });
     }
+  },
+
+  /**
+   * POST /payment/paynow/finalize - Complete PayNow checkout
+   */
+  payNowFinalize: (req, res) => {
+    const user = req.session.user;
+    const pending = req.session.pendingPayment;
+    if (!user) return res.status(401).json({ ok: false, error: "Not logged in" });
+    if (!pending || pending.method !== "PayNow") {
+      return res.status(400).json({ ok: false, error: "No pending PayNow payment" });
+    }
+
+    computeCartTotals(user.id, pending.start_date, pending.end_date, (errT, summary) => {
+      if (errT) return res.status(400).json({ ok: false, error: errT.message || "Checkout failed" });
+
+      checkStockAvailability(summary.items, pending.start_date, pending.end_date, (errStock) => {
+        if (errStock) return res.status(400).json({ ok: false, error: errStock.message || "Insufficient stock" });
+
+        Invoice.createFromCart(
+          user.id,
+          pending.start_date,
+          pending.end_date,
+          "PayNow",
+          (err, data) => {
+            if (err) return res.status(400).json({ ok: false, error: err.message || "checkout_failed" });
+
+            req.session.lastInvoice = data;
+            delete req.session.pendingPayment;
+            decrementStock(summary.items, () => {});
+
+            LoyaltyPoints.awardPoints(
+              user.id,
+              data.header.totalAmount,
+              `INVOICE-${data.header.invoice_id}`,
+              `Earned from PayNow payment on invoice ${data.header.invoice_id}`,
+              (errLoyalty) => {
+                if (errLoyalty) console.error("Error awarding loyalty points:", errLoyalty);
+                return res.json({ ok: true, redirect: "/payment/success" });
+              }
+            );
+          }
+        );
+      });
+    });
   },
 
   // GET /invoice/:id

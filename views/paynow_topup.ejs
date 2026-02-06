@@ -1,4 +1,4 @@
-<%- include("partials/header", { title: "PayNow Wallet Top-up" }) %>
+<%- include("partials/header", { title: pageTitle || "PayNow Wallet Top-up" }) %>
 <%- include("partials/navbar", { user: user }) %>
 
 <div class="container container-max py-5">
@@ -6,7 +6,7 @@
     <div class="col-lg-6">
       <div class="card shadow-soft">
         <div class="card-body text-center">
-          <h5 class="card-title mb-4">PayNow Wallet Top-up</h5>
+          <h5 class="card-title mb-4"><%= heading || "PayNow Wallet Top-up" %></h5>
           
           <div class="alert alert-info">
             <div class="fw-semibold">Top-up Amount</div>
@@ -22,7 +22,7 @@
               <li>Select PayNow transfer</li>
               <li>Enter UEN: <code>123456789A</code></li>
               <li>Enter amount: <code>SGD $<%= Number(amount).toFixed(2) %></code></li>
-              <li>Reference: <code>#<%= user.id %></code></li>
+              <li>Reference: <code><%= reference || ("#" + user.id) %></code></li>
               <li>Submit payment and confirm</li>
             </ol>
           </div>
@@ -40,7 +40,7 @@
           </p>
 
           <button class="btn btn-primary mt-3" onclick="finalizePayNowTopup()">Confirm Payment Complete</button>
-          <a href="/wallet/topup" class="btn btn-link">Change Method</a>
+          <a href="<%= backUrl || '/wallet/topup' %>" class="btn btn-link">Change Method</a>
         </div>
       </div>
     </div>
@@ -55,7 +55,7 @@
       return;
     }
     
-    fetch('/wallet/paynow/finalize', {
+    fetch('<%= confirmUrl || "/wallet/paynow/finalize" %>', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

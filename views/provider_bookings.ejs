@@ -20,6 +20,7 @@
             <th>Dates</th>
             <th>Total</th>
             <th>Status</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -31,6 +32,7 @@
               <td><%= b.start_date %> → <%= b.end_date %></td>
               <td>$<%= Number(b.total_price || 0).toFixed(2) %></td>
               <td><span class="badge bg-dark"><%= b.status %></span></td>
+              <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="/provider/chat/<%= b.booking_id %>">Chat</a></td>
             </tr>
           <% }) %>
         </tbody>

@@ -214,6 +214,15 @@
     border: 1px solid rgba(200, 190, 180, 0.3);
   }
 
+  .storage-thumb {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 16px;
+    margin-bottom: 16px;
+    background: #f3f3f3;
+  }
+
   .storage-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
@@ -426,12 +435,15 @@
   function showAllLocations() {
     // Show location section
     document.getElementById('locations-section').style.display = 'block';
-    
-    // Hide storage grid section
-    document.getElementById('storage-grid').style.display = 'none';
-    
-    // Smooth scroll to locations
-    document.getElementById('locations-section').scrollIntoView({ behavior: 'smooth' });
+
+    // Ensure storage grid is visible and reset cards
+    document.getElementById('storage-grid').style.display = 'block';
+    document.getElementById('location-title').textContent = 'Available Storage';
+    const cards = document.querySelectorAll('.storage-card');
+    cards.forEach(card => { card.style.display = 'block'; });
+
+    // Smooth scroll to storage list
+    document.getElementById('storage-grid').scrollIntoView({ behavior: 'smooth' });
   }
 </script>
 
@@ -554,16 +566,18 @@
 </section>
 
 <!-- Storage Items by Location -->
-<section class="storage-section" id="storage-grid" style="display: <%= filtersApplied ? 'block' : 'none' %>;">
+<section class="storage-section" id="storage-grid" style="display: block;">
   <div class="storage-content">
     <div class="storage-header">
       <h3 id="location-title"><%= filtersApplied ? 'Filtered Storage' : 'Available Storage' %></h3>
-      <button onclick="showAllLocations()" class="btn-back" style="display: <%= filtersApplied ? 'none' : 'inline-block' %>;">← Back to Locations</button>
+      <button onclick="showAllLocations()" class="btn-back">← Show All</button>
     </div>
 
     <div class="storage-grid">
       <% storage.forEach(s => { %>
         <div class="storage-card" data-location="<%= s.location || 'N/A' %>">
+          <% const img = s.primary_image || '/images/storageBG.png'; %>
+          <img class="storage-thumb" src="<%= img %>" alt="<%= s.title %>">
           <h5><a href="/storage/<%= s.storage_id %>" style="color: inherit; text-decoration: none; cursor: pointer;"><%= s.title %></a></h5>
           <p><strong>Size:</strong> <%= s.size %></p>
           <p><strong>Location:</strong> <%= s.location || 'N/A' %></p>

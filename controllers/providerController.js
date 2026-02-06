@@ -1,6 +1,7 @@
 const Storage = require("../models/Storage");
 const Kyc = require("../models/Kyc");
 const Promotion = require("../models/Promotion");
+const StorageImage = require("../models/StorageImage");
 const db = require("../config/db");
 
 function getUserId(req) {
@@ -142,7 +143,20 @@ module.exports = {
 
     Storage.getByProvider(getUserId(req), (err, results) => {
       if (err) return res.status(500).send("Database error");
-      res.render("provider_storage_list", { storage: results || [] });
+      const ids = (results || []).map((s) => s.storage_id);
+      StorageImage.getPrimaryForStorageIds(ids, (iErr, rows) => {
+        const primaryMap = {};
+        if (!iErr && rows) {
+          rows.forEach((r) => {
+            primaryMap[r.storage_id] = r.image_path;
+          });
+        }
+        const storageWithImages = (results || []).map((s) => ({
+          ...s,
+          primary_image: primaryMap[s.storage_id] || null,
+        }));
+        res.render("provider_storage_list", { storage: storageWithImages });
+      });
     });
   },
 
@@ -154,7 +168,7 @@ module.exports = {
     },
     requireKycApproved,
     (req, res) => {
-      res.render("provider_add_storage");
+      res.render("provider_add_storage", { storage: null });
     },
   ],
 
@@ -181,8 +195,14 @@ module.exports = {
         available_units: req.body.available_units,
       };
 
-      Storage.create(data, (err) => {
+      Storage.create(data, (err, result) => {
         if (err) return res.status(500).send("Database error");
+        const storageId = result?.insertId;
+        const files = req.files || [];
+        const paths = files.map((f) => `/uploads/storage/${f.filename}`);
+        if (storageId && paths.length) {
+          return StorageImage.addMany({ storageId, paths }, () => res.redirect("/provider/storage"));
+        }
         res.redirect("/provider/storage");
       });
     },
@@ -199,7 +219,10 @@ module.exports = {
       if (!s || Number(s.provider_id) !== Number(getUserId(req))) {
         return res.status(404).send("Listing not found");
       }
-      res.render("provider_edit_storage", { storage: s });
+      StorageImage.listByStorage(id, (iErr, images) => {
+        if (iErr) return res.status(500).send("Database error");
+        res.render("provider_edit_storage", { storage: s, images: images || [] });
+      });
     });
   },
 
@@ -232,6 +255,11 @@ module.exports = {
         },
         (uErr) => {
           if (uErr) return res.status(500).send("Database error");
+          const files = req.files || [];
+          const paths = files.map((f) => `/uploads/storage/${f.filename}`);
+          if (paths.length) {
+            return StorageImage.addMany({ storageId: id, paths }, () => res.redirect("/provider/storage"));
+          }
           res.redirect("/provider/storage");
         }
       );

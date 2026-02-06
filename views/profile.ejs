@@ -1,0 +1,149 @@
+<%- include("partials/header", { title: "Profile", bodyClass: "dashboard-bg" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5">
+  <div class="page-header">
+    <div>
+      <h2 class="mb-1">Profile</h2>
+      <p>Manage your account details.</p>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="card shadow-soft h-100">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Account Summary</h5>
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <label class="cs-avatar cs-avatar-clickable" for="profileImage">
+              <% if (profile.profile_image) { %>
+                <img id="profilePreview" src="/uploads/profile/<%= profile.profile_image %>" alt="Profile" />
+              <% } else { %>
+                <span id="profilePreviewFallback"><%= (profile.name || "U").trim().charAt(0).toUpperCase() %></span>
+              <% } %>
+            </label>
+            <div>
+              <div class="fw-semibold"><%= profile.name %></div>
+              <div class="text-muted small"><%= profile.email %></div>
+            </div>
+          </div>
+          <div class="mb-2">
+            <span class="text-muted">User ID</span>
+            <div class="fw-semibold"><%= profile.user_id %></div>
+          </div>
+          <div class="mb-2">
+            <span class="text-muted">Role</span>
+            <div class="fw-semibold text-capitalize"><%= profile.role %></div>
+          </div>
+          <div class="mb-2">
+            <span class="text-muted">Email</span>
+            <div class="fw-semibold"><%= profile.email %></div>
+          </div>
+          <div class="mb-2">
+            <span class="text-muted">Phone</span>
+            <div class="fw-semibold"><%= profile.phone || 'Not set' %></div>
+          </div>
+          <div class="mb-2">
+            <span class="text-muted">Address</span>
+            <div class="fw-semibold"><%= profile.address || 'Not set' %></div>
+          </div>
+
+          <% if (user && user.role === 'customer') { %>
+            <hr />
+            <div class="mb-2">
+              <span class="text-muted">Wallet Balance</span>
+              <div class="fw-semibold">$<%= Number(user.walletBalance || user.wallet_balance || 0).toFixed(2) %></div>
+            </div>
+            <div class="mb-2">
+              <span class="text-muted">Loyalty Points</span>
+              <div class="fw-semibold"><%= Number(user.loyaltyPoints || 0).toLocaleString() %></div>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="card shadow-soft">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Update Details</h5>
+
+          <% if (error) { %>
+            <div class="alert alert-danger"><%= error %></div>
+          <% } %>
+          <% if (success) { %>
+            <div class="alert alert-success"><%= success %></div>
+          <% } %>
+
+          <form method="POST" action="/profile" class="row g-3" enctype="multipart/form-data">
+            <div class="col-md-6">
+              <label class="form-label">Name</label>
+              <input type="text" name="name" class="form-control" value="<%= profile.name %>" required />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Email</label>
+              <input type="email" name="email" class="form-control" value="<%= profile.email %>" required />
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Profile Picture</label>
+              <input id="profileImage" type="file" name="profileImage" class="form-control" accept="image/png,image/jpeg,image/webp" />
+              <div class="form-text">PNG, JPG, or WEBP up to 2MB.</div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Phone Number</label>
+              <input type="text" name="phone" class="form-control" value="<%= profile.phone || '' %>" placeholder="e.g., +65 9123 4567" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Address</label>
+              <input type="text" name="address" class="form-control" value="<%= profile.address || '' %>" placeholder="Street, City, Postal Code" />
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">New Password</label>
+              <input type="password" name="password" class="form-control" placeholder="Leave blank to keep current" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Confirm New Password</label>
+              <input type="password" name="confirmPassword" class="form-control" placeholder="Repeat new password" />
+            </div>
+
+            <div class="col-12 d-flex justify-content-end gap-2">
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const input = document.getElementById("profileImage");
+    const avatar = document.querySelector(".cs-avatar");
+
+    if (!input || !avatar) return;
+
+    input.addEventListener("change", (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      const url = URL.createObjectURL(file);
+      let img = document.getElementById("profilePreview");
+      const fallback = document.getElementById("profilePreviewFallback");
+
+      if (fallback) fallback.remove();
+      if (!img) {
+        img = document.createElement("img");
+        img.id = "profilePreview";
+        img.alt = "Profile";
+        avatar.appendChild(img);
+      }
+      img.src = url;
+    });
+  })();
+</script>
+
+<%- include("partials/footer") %>

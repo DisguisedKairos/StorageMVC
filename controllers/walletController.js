@@ -148,7 +148,12 @@ module.exports = {
     if (method === "PayNow") {
       return res.render("paynow_topup", {
         user: req.session.user,
-        amount: topupAmount
+        amount: topupAmount,
+        pageTitle: "PayNow Wallet Top-up",
+        heading: "PayNow Wallet Top-up",
+        confirmUrl: "/wallet/paynow/finalize",
+        backUrl: "/wallet/topup",
+        reference: `#${req.session.user.id}`
       });
     }
   },
