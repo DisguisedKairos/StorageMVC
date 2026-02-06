@@ -18,6 +18,7 @@ app.set("io", io);
    MIDDLEWARE
 ====================== */
 app.use(express.urlencoded({ extended: true }));
+app.set("trust proxy", 1);
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -26,12 +27,13 @@ app.use(express.static(path.join(__dirname, "public")));
 ====================== */
 app.use(
   session({
-    secret: "super_secret_key",
+    secret: process.env.SESSION_SECRET || "super_secret_key",
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: app.get("env") === "production",
-      httpOnly: true
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      sameSite: "lax"
     }
   })
 );
