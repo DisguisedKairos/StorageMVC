@@ -2,6 +2,8 @@ const Storage = require("../models/Storage");
 const Review = require("../models/Review");
 const Complaint = require("../models/Complaint");
 const AdminNotification = require("../models/AdminNotification");
+const StorageImage = require("../models/StorageImage");
+const Kyc = require("../models/Kyc");
 
 function getUserId(req) {
   return (req.session?.user?.id || req.session?.user?.user_id);
@@ -37,18 +39,33 @@ module.exports = {
         };
       });
 
-      res.render("storage_list", {
-        storage,
-        filtersApplied,
-        filters: {
-          q: q || "",
-          size: size || "",
-          location: location || "",
-          type: type || "",
-          priceMin: priceMin || "",
-          priceMax: priceMax || "",
-          ratingMin: ratingMin || "",
-        },
+      const ids = storage.map((s) => s.storage_id);
+      StorageImage.getPrimaryForStorageIds(ids, (iErr, rows) => {
+        const primaryMap = {};
+        if (!iErr && rows) {
+          rows.forEach((r) => {
+            primaryMap[r.storage_id] = r.image_path;
+          });
+        }
+
+        const storageWithImages = storage.map((s) => ({
+          ...s,
+          primary_image: primaryMap[s.storage_id] || null,
+        }));
+
+        res.render("storage_list", {
+          storage: storageWithImages,
+          filtersApplied,
+          filters: {
+            q: q || "",
+            size: size || "",
+            location: location || "",
+            type: type || "",
+            priceMin: priceMin || "",
+            priceMax: priceMax || "",
+            ratingMin: ratingMin || "",
+          },
+        });
       });
     });
   },
@@ -67,9 +84,13 @@ module.exports = {
         const base = storage.price_per_day || storage.price;
         storage.dynamic_price_per_day = dynamicPrice(base, storage.available_units, storage.total_units);
 
-        res.render("storage_detail", {
-          storage,
-          reviews: reviews || [],
+        StorageImage.listByStorage(id, (iErr, images) => {
+          if (iErr) return res.status(500).send("Database error");
+          res.render("storage_detail", {
+            storage,
+            reviews: reviews || [],
+            images: images || [],
+          });
         });
       });
     });
@@ -110,23 +131,29 @@ module.exports = {
         (cErr) => {
           if (cErr) return res.status(500).send("Database error");
 
-          Complaint.countProviderMonth(providerId, (cntErr, total) => {
-            if (cntErr) return res.redirect(`/storage/${storageId}`);
+          const reporterId = getUserId(req);
+          const singleMessage = `New complaint on storage #${storageId} by user #${reporterId}.`;
+          AdminNotification.create({ providerId, type: "complaint", message: singleMessage }, () => {
+            Complaint.countProviderMonth(providerId, (cntErr, total) => {
+              if (cntErr) return res.redirect(`/storage/${storageId}`);
 
-            if (total > 10) {
-              AdminNotification.existsThisMonth({ providerId, type: "complaint_threshold" }, (eErr, exists) => {
-                if (!eErr && !exists) {
-                  const message = `Provider #${providerId} exceeded 10 complaints this month (${total}).`;
-                  AdminNotification.create({ providerId, type: "complaint_threshold", message }, () => {
+            if (total >= 10) {
+              Kyc.setStatusByUserId({ userId: providerId, status: "REJECTED", adminId: null }, () => {
+                AdminNotification.existsThisMonth({ providerId, type: "complaint_threshold" }, (eErr, exists) => {
+                  if (!eErr && !exists) {
+                    const message = `Provider #${providerId} reached ${total} complaints this month. KYC auto-rejected.`;
+                    AdminNotification.create({ providerId, type: "complaint_threshold", message }, () => {
+                      return res.redirect(`/storage/${storageId}`);
+                    });
+                  } else {
                     return res.redirect(`/storage/${storageId}`);
-                  });
-                } else {
-                  return res.redirect(`/storage/${storageId}`);
-                }
+                  }
+                });
               });
             } else {
               return res.redirect(`/storage/${storageId}`);
             }
+            });
           });
         }
       );

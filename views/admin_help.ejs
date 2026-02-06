@@ -1,0 +1,157 @@
+<%- include("partials/header", { title: "Help Inbox", bodyClass: "dashboard-bg" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5">
+  <div class="page-header">
+    <div>
+      <h2 class="mb-1">Help Inbox</h2>
+      <p>Review and reply to customer help requests.</p>
+    </div>
+  </div>
+
+  <% if (error) { %>
+    <div class="alert alert-danger"><%= error %></div>
+  <% } %>
+  <% if (success) { %>
+    <div class="alert alert-success"><%= success %></div>
+  <% } %>
+
+  <form method="GET" action="/admin/help" class="card shadow-soft mb-4">
+    <div class="card-body">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label">Status</label>
+          <select name="status" class="form-select">
+            <option value="">All</option>
+            <option value="OPEN" <%= (filters && filters.status === 'OPEN') ? 'selected' : '' %>>Open</option>
+            <option value="ANSWERED" <%= (filters && filters.status === 'ANSWERED') ? 'selected' : '' %>>Answered</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Search</label>
+          <input type="text" name="q" class="form-control" value="<%= (filters && filters.q) ? filters.q : '' %>" placeholder="Subject, message, user" />
+        </div>
+        <div class="col-md-2 d-grid">
+          <button class="btn btn-outline-primary" type="submit">Apply</button>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <div class="d-flex flex-column gap-3">
+    <% if (!messages || messages.length === 0) { %>
+      <div class="text-muted">No help requests yet.</div>
+    <% } else { %>
+      <% messages.forEach(m => { %>
+        <div class="card shadow-soft">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <h5 class="mb-1"><%= m.subject %></h5>
+                <div class="text-muted small">From: <%= m.name || ('User #' + m.user_id) %> • <%= m.email || '' %></div>
+                <div class="text-muted small">Submitted: <%= new Date(m.created_at).toLocaleString() %></div>
+              </div>
+              <span class="badge bg-<%= (m.status === 'ANSWERED') ? 'success' : 'warning' %>"><%= m.status %></span>
+            </div>
+
+            <div class="mt-3"><%= m.message %></div>
+
+            <% if (m.attachment_path) { %>
+              <div class="mt-2">
+                <a href="<%= m.attachment_path %>" target="_blank" rel="noreferrer">View attachment</a>
+              </div>
+            <% } %>
+
+            <div class="mt-3">
+              <% (replies && replies[m.help_id] ? replies[m.help_id] : []).forEach(r => { %>
+                <div class="mb-2 p-2 rounded <%= r.sender_role === 'admin' ? 'bg-light' : 'bg-white border' %>">
+                  <div class="small text-muted"><%= r.sender_role === 'admin' ? 'Admin' : 'Customer' %> • <%= new Date(r.created_at).toLocaleString() %></div>
+                  <div><%= r.message %></div>
+                </div>
+              <% }) %>
+            </div>
+
+            <% if (m.admin_reply) { %>
+              <div class="mt-3 bg-light rounded p-2">
+                <div class="fw-semibold">Latest reply</div>
+                <div><%= m.admin_reply %></div>
+              </div>
+            <% } %>
+
+            <form method="POST" action="/admin/help/<%= m.help_id %>/reply" class="mt-3 admin-reply-form" data-help-id="<%= m.help_id %>">
+              <div class="row g-2">
+                <div class="col-md-9">
+                  <textarea name="reply" class="form-control" rows="2" placeholder="Write a reply" required></textarea>
+                </div>
+                <div class="col-md-3 d-grid gap-2">
+                  <select name="status" class="form-select">
+                    <option value="ANSWERED">Answered</option>
+                    <option value="OPEN" <%= m.status === 'OPEN' ? 'selected' : '' %>>Open</option>
+                  </select>
+                  <button class="btn btn-primary" type="submit">Send Reply</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+</div>
+
+<div id="adminHelpRealtime" data-admin-id="<%= user ? (user.id || user.user_id) : '' %>"></div>
+
+<%- include("partials/footer") %>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  (function () {
+    const socket = io();
+    const adminId = Number(document.getElementById("adminHelpRealtime")?.dataset.adminId || 0) || null;
+
+    document.querySelectorAll(".admin-reply-form").forEach((form) => {
+      const helpId = form.dataset.helpId;
+      if (!helpId) return;
+      socket.emit("help:join", { helpId: Number(helpId) });
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const textarea = form.querySelector("textarea[name='reply']");
+        const status = form.querySelector("select[name='status']")?.value || "ANSWERED";
+        const message = (textarea.value || "").trim();
+        if (!message) return;
+        socket.emit("help:send", { helpId: Number(helpId), senderRole: "admin", senderId: adminId, message, status });
+        textarea.value = "";
+      });
+    });
+
+    const findThread = (helpId) => {
+      const forms = document.querySelectorAll(`.admin-reply-form[data-help-id='${helpId}']`);
+      if (!forms.length) return null;
+      return forms[0].closest(".card");
+    };
+
+    socket.on("help:new", (payload) => {
+      if (!payload || !payload.helpId) return;
+      const container = findThread(payload.helpId);
+      if (!container) return;
+      const thread = container.querySelector(".mt-3 + .mt-3") || container.querySelector(".mt-3");
+      if (!thread) return;
+
+      const wrap = document.createElement("div");
+      wrap.className = `mb-2 p-2 rounded ${payload.sender_role === 'admin' ? 'bg-light' : 'bg-white border'}`;
+
+      const meta = document.createElement("div");
+      meta.className = "small text-muted";
+      const sender = payload.sender_role === "admin" ? "Admin" : "Customer";
+      meta.textContent = `${sender} • ${new Date(payload.created_at || Date.now()).toLocaleString()}`;
+
+      const body = document.createElement("div");
+      body.textContent = payload.message;
+
+      wrap.appendChild(meta);
+      wrap.appendChild(body);
+      thread.appendChild(wrap);
+    });
+  })();
+</script>

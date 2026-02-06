@@ -50,6 +50,9 @@
         <% } %>
 
         <% if (user) { %>
+          <li class="nav-item">
+            <a class="nav-link" href="/chats">Chat</a>
+          </li>
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle fw-semibold" href="#" id="userMenu" role="button"
               data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
@@ -65,6 +68,7 @@
                 <li><a class="dropdown-item" href="/admin/leaderboards">Leaderboards</a></li>
                 <li><a class="dropdown-item" href="/admin/notifications">Notifications</a></li>
                 <li><a class="dropdown-item" href="/admin/kyc">Review KYC</a></li>
+                <li><a class="dropdown-item" href="/admin/help">Help Inbox</a></li>
               <% } else if (user.role === 'provider') { %>
                 <li><a class="dropdown-item" href="/provider/dashboard">Provider Dashboard</a></li>
                 <li><a class="dropdown-item" href="/provider/storage">Manage Storage</a></li>
@@ -75,6 +79,8 @@
                 <li><a class="dropdown-item" href="/customer/dashboard">Dashboard</a></li>
                 <li><a class="dropdown-item" href="/cart">My Cart</a></li>
               <% } %>
+              <li><a class="dropdown-item" href="/profile">Profile</a></li>
+              <li><a class="dropdown-item" href="/help">Help</a></li>
               <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item text-danger" href="/logout">Logout</a></li>
             </ul>

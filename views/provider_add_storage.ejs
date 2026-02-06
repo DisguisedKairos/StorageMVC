@@ -4,7 +4,7 @@
 <div class="container container-max py-5" style="max-width:900px;">
   <h3 class="mb-3">Add Storage Listing</h3>
   <div class="card shadow-soft p-4">
-    <form method="POST" action="/provider/storage/add">
+    <form method="POST" action="/provider/storage/add" enctype="multipart/form-data">
 
       <div class="row g-3">
         <div class="col-md-4">
@@ -68,6 +68,12 @@
         <div class="col-12">
           <label class="form-label">Description</label>
           <textarea class="form-control" name="description" rows="4"><%= (storage && storage.description) || '' %></textarea>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Storage Images (up to 6)</label>
+          <input class="form-control" type="file" name="images" accept="image/png,image/jpeg,image/webp" multiple>
+          <div class="form-text">PNG, JPG, or WEBP up to 5MB each.</div>
         </div>
       </div>
 

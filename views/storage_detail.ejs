@@ -6,6 +6,22 @@
 
   <div class="row g-4">
     <div class="col-md-7">
+      <% if (images && images.length) { %>
+        <div class="card shadow-soft p-3 mb-4">
+          <div class="row g-2">
+            <% images.forEach(img => { %>
+              <div class="col-6">
+                <img src="<%= img.image_path %>" alt="Storage image" style="width:100%;height:180px;object-fit:cover;border-radius:12px;">
+              </div>
+            <% }) %>
+          </div>
+        </div>
+      <% } else { %>
+        <div class="card shadow-soft p-3 mb-4">
+          <img src="/images/storageBG.png" alt="Storage image" style="width:100%;height:220px;object-fit:cover;border-radius:12px;">
+        </div>
+      <% } %>
+
       <div class="card shadow-soft p-4">
         <div class="d-flex justify-content-between align-items-start">
           <div>

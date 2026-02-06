@@ -1,0 +1,158 @@
+<%- include("partials/header", { title: "Help", bodyClass: "dashboard-bg" }) %>
+<%- include("partials/navbar", { user: user }) %>
+
+<div class="container container-max py-5">
+  <div class="page-header">
+    <div>
+      <h2 class="mb-1">Help & Support</h2>
+      <p>Send a message to admin and track replies.</p>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-5">
+      <div class="card shadow-soft">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Contact Admin</h5>
+
+          <% if (error) { %>
+            <div class="alert alert-danger"><%= error %></div>
+          <% } %>
+          <% if (success) { %>
+            <div class="alert alert-success"><%= success %></div>
+          <% } %>
+
+          <form method="POST" action="/help" class="row g-3" enctype="multipart/form-data">
+            <div class="col-12">
+              <label class="form-label">Subject</label>
+              <input type="text" name="subject" class="form-control" placeholder="Brief summary" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Message</label>
+              <textarea name="message" class="form-control" rows="6" placeholder="Tell us what you need help with" required></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Attachment (optional)</label>
+              <input type="file" name="attachment" class="form-control" accept="image/png,image/jpeg,image/webp,application/pdf">
+              <div class="form-text">PNG, JPG, WEBP, or PDF up to 5MB.</div>
+            </div>
+            <div class="col-12 d-flex justify-content-end">
+              <button class="btn btn-primary" type="submit">Send</button>
+            </div>
+          </form>
+
+          <hr />
+          <h6 class="mb-2">Quick tips</h6>
+          <ul class="small text-muted mb-0">
+            <li>Include order or booking ID if relevant.</li>
+            <li>Share the exact error message or screenshot description.</li>
+            <li>We typically reply within 1–2 business days.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-7">
+      <div class="card shadow-soft">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Your Requests</h5>
+          <% if (!messages || messages.length === 0) { %>
+            <div class="text-muted">No messages yet.</div>
+          <% } else { %>
+            <div class="d-flex flex-column gap-3">
+              <% messages.forEach(m => { %>
+                <div class="border rounded p-3">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="fw-semibold"><%= m.subject %></div>
+                    <span class="badge bg-<%= (m.status === 'ANSWERED') ? 'success' : 'warning' %>"><%= m.status %></span>
+                  </div>
+                  <div class="text-muted small mb-2">Submitted: <%= new Date(m.created_at).toLocaleString() %></div>
+                  <div class="mb-2"><%= m.message %></div>
+                  <% if (m.attachment_path) { %>
+                    <div class="mb-2">
+                      <a href="<%= m.attachment_path %>" target="_blank" rel="noreferrer">View attachment</a>
+                    </div>
+                  <% } %>
+
+                  <div class="mt-3">
+                    <% (((typeof replies !== 'undefined' && replies) ? replies : {})[m.help_id] || []).forEach(r => { %>
+                      <div class="mb-2 p-2 rounded <%= r.sender_role === 'admin' ? 'bg-light' : 'bg-white border' %>">
+                        <div class="small text-muted"><%= r.sender_role === 'admin' ? 'Admin' : 'You' %> • <%= new Date(r.created_at).toLocaleString() %></div>
+                        <div><%= r.message %></div>
+                      </div>
+                    <% }) %>
+                  </div>
+
+                  <form method="POST" action="/help/<%= m.help_id %>/reply" class="mt-2 help-reply-form" data-help-id="<%= m.help_id %>">
+                    <div class="input-group">
+                      <input type="text" name="message" class="form-control" placeholder="Reply to admin" required>
+                      <button class="btn btn-outline-primary" type="submit">Send</button>
+                    </div>
+                  </form>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="helpRealtime" data-user-id="<%= user ? (user.id || user.user_id) : '' %>"></div>
+
+<%- include("partials/footer") %>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  (function () {
+    const socket = io();
+    const userId = Number(document.getElementById("helpRealtime")?.dataset.userId || 0) || null;
+
+    const threadMap = {};
+    document.querySelectorAll(".help-reply-form").forEach((form) => {
+      const helpId = form.dataset.helpId;
+      if (!helpId) return;
+      socket.emit("help:join", { helpId: Number(helpId) });
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const input = form.querySelector("input[name='message']");
+        const message = (input.value || "").trim();
+        if (!message) return;
+        socket.emit("help:send", { helpId: Number(helpId), senderRole: "customer", senderId: userId, message });
+        input.value = "";
+      });
+    });
+
+    const findThread = (helpId) => {
+      const forms = document.querySelectorAll(`.help-reply-form[data-help-id='${helpId}']`);
+      if (!forms.length) return null;
+      return forms[0].closest(".border.rounded.p-3");
+    };
+
+    socket.on("help:new", (payload) => {
+      if (!payload || !payload.helpId) return;
+      const container = findThread(payload.helpId);
+      if (!container) return;
+
+      const thread = container.querySelector(".mt-3");
+      if (!thread) return;
+
+      const wrap = document.createElement("div");
+      wrap.className = `mb-2 p-2 rounded ${payload.sender_role === 'admin' ? 'bg-light' : 'bg-white border'}`;
+
+      const meta = document.createElement("div");
+      meta.className = "small text-muted";
+      const sender = payload.sender_role === "admin" ? "Admin" : "You";
+      meta.textContent = `${sender} • ${new Date(payload.created_at || Date.now()).toLocaleString()}`;
+
+      const body = document.createElement("div");
+      body.textContent = payload.message;
+
+      wrap.appendChild(meta);
+      wrap.appendChild(body);
+      thread.appendChild(wrap);
+    });
+  })();
+</script>

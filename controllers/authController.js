@@ -30,6 +30,7 @@ module.exports = {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                profileImage: user.profile_image || null,
                 walletBalance: 0,
                 loyaltyPoints: 0
             };
